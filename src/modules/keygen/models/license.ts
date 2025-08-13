@@ -1,4 +1,3 @@
-
 import { model } from "@medusajs/framework/utils"
 
 const KeygenLicense = model.define("keygen_license", {

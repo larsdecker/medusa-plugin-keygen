@@ -1,13 +1,26 @@
-
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
 import type { DetailWidgetProps, AdminProduct } from "@medusajs/framework/types"
-import { Container, Heading, Input, Button, Label, Text, Switch, Badge, Checkbox } from "@medusajs/ui"
+import {
+  Container,
+  Heading,
+  Input,
+  Button,
+  Label,
+  Text,
+  Switch,
+  Badge,
+  Checkbox,
+} from "@medusajs/ui"
 import { useState, useMemo, useEffect } from "react"
 
 const LS_RECENT_PRODUCTS = "keygen_recent_products"
 const LS_RECENT_POLICIES = "keygen_recent_policies"
 const loadRecent = (key: string): string[] => {
-  try { return JSON.parse(localStorage.getItem(key) || "[]") } catch { return [] }
+  try {
+    return JSON.parse(localStorage.getItem(key) || "[]")
+  } catch {
+    return []
+  }
 }
 const pushRecent = (key: string, value: string) => {
   if (!value) return
@@ -42,7 +55,9 @@ async function listPolicies(productId: string) {
 }
 
 async function listEntitlements() {
-  const res = await fetch(`/admin/keygen/entitlements`, { credentials: "include" })
+  const res = await fetch(`/admin/keygen/entitlements`, {
+    credentials: "include",
+  })
   if (!res.ok) return []
   const json = await res.json()
   return (json?.data ?? []) as { id: string; code?: string; name?: string }[]
@@ -93,7 +108,10 @@ async function clonePolicyServer(payload: {
   return await res.json()
 }
 
-async function patchProductMetadata(productId: string, meta: Record<string, any>) {
+async function patchProductMetadata(
+  productId: string,
+  meta: Record<string, any>,
+) {
   const res = await fetch(`/admin/products/${productId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -110,19 +128,37 @@ async function patchProductMetadata(productId: string, meta: Record<string, any>
 const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
   const currentMeta = data?.metadata ?? {}
   const productDisplayName = data?.title ?? data?.handle ?? ""
-  const [kp, setKp] = useState<string>(String(currentMeta["keygen_product"] ?? ""))
-  const [kl, setKl] = useState<string>(String(currentMeta["keygen_policy"] ?? ""))
+  const [kp, setKp] = useState<string>(
+    String(currentMeta["keygen_product"] ?? ""),
+  )
+  const [kl, setKl] = useState<string>(
+    String(currentMeta["keygen_policy"] ?? ""),
+  )
   const [autoValidate, setAutoValidate] = useState(true)
-  const [vp, setVp] = useState<{ok:boolean;message?:string;name?:string}|null>(null)
-  const [vl, setVl] = useState<{ok:boolean;message?:string;name?:string}|null>(null)
-  const canSave = useMemo(() => kp !== String(currentMeta["keygen_product"] ?? "") ||
-                                  kl !== String(currentMeta["keygen_policy"] ?? ""), [kp, kl, currentMeta])
+  const [vp, setVp] = useState<{
+    ok: boolean
+    message?: string
+    name?: string
+  } | null>(null)
+  const [vl, setVl] = useState<{
+    ok: boolean
+    message?: string
+    name?: string
+  } | null>(null)
+  const canSave = useMemo(
+    () =>
+      kp !== String(currentMeta["keygen_product"] ?? "") ||
+      kl !== String(currentMeta["keygen_policy"] ?? ""),
+    [kp, kl, currentMeta],
+  )
 
   const [recentProducts, setRecentProducts] = useState<string[]>([])
   const [recentPolicies, setRecentPolicies] = useState<string[]>([])
 
-  const [policies, setPolicies] = useState<{id:string;name?:string}[]>([])
-  const [entitlements, setEntitlements] = useState<{id:string;code?:string;name?:string}[]>([])
+  const [policies, setPolicies] = useState<{ id: string; name?: string }[]>([])
+  const [entitlements, setEntitlements] = useState<
+    { id: string; code?: string; name?: string }[]
+  >([])
   const [selectedEntitlements, setSelectedEntitlements] = useState<string[]>([])
 
   const [baseName, setBaseName] = useState("Annual")
@@ -134,9 +170,15 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
   const [cloneSourceId, setCloneSourceId] = useState("")
   const [cloneTargetProductId, setCloneTargetProductId] = useState("")
   const [cloneOverrideName, setCloneOverrideName] = useState("")
-  const [cloneOverrideSeats, setCloneOverrideSeats] = useState<number|undefined>(undefined)
-  const [cloneOverrideFloating, setCloneOverrideFloating] = useState<boolean|undefined>(undefined)
-  const [cloneOverrideDurationDays, setCloneOverrideDurationDays] = useState<number|undefined>(undefined)
+  const [cloneOverrideSeats, setCloneOverrideSeats] = useState<
+    number | undefined
+  >(undefined)
+  const [cloneOverrideFloating, setCloneOverrideFloating] = useState<
+    boolean | undefined
+  >(undefined)
+  const [cloneOverrideDurationDays, setCloneOverrideDurationDays] = useState<
+    number | undefined
+  >(undefined)
 
   useEffect(() => {
     setRecentProducts(loadRecent(LS_RECENT_PRODUCTS))
@@ -145,8 +187,12 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
 
   useEffect(() => {
     if (kp) {
-      listPolicies(kp).then(setPolicies).catch(() => setPolicies([]))
-      listEntitlements().then(setEntitlements).catch(() => setEntitlements([]))
+      listPolicies(kp)
+        .then(setPolicies)
+        .catch(() => setPolicies([]))
+      listEntitlements()
+        .then(setEntitlements)
+        .catch(() => setEntitlements([]))
     } else {
       setPolicies([])
     }
@@ -157,8 +203,16 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
   async function handleValidate() {
     const resP = kp ? await validateOnServer("product", kp) : { ok: true }
     const resL = kl ? await validateOnServer("policy", kl) : { ok: true }
-    setVp((resP as any).ok ? { ok:true, name: (resP as any).data?.name } : { ok:false, message: (resP as any).message })
-    setVl((resL as any).ok ? { ok:true, name: (resL as any).data?.name } : { ok:false, message: (resL as any).message })
+    setVp(
+      (resP as any).ok
+        ? { ok: true, name: (resP as any).data?.name }
+        : { ok: false, message: (resP as any).message },
+    )
+    setVl(
+      (resL as any).ok
+        ? { ok: true, name: (resL as any).data?.name }
+        : { ok: false, message: (resL as any).message },
+    )
   }
 
   async function handleSave() {
@@ -166,8 +220,16 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
       const resP = kp ? await validateOnServer("product", kp) : { ok: true }
       const resL = kl ? await validateOnServer("policy", kl) : { ok: true }
       if (!(resP as any).ok || !(resL as any).ok) {
-        setVp((resP as any).ok ? { ok:true, name: (resP as any).data?.name } : { ok:false, message: (resP as any).message })
-        setVl((resL as any).ok ? { ok:true, name: (resL as any).data?.name } : { ok:false, message: (resL as any).message })
+        setVp(
+          (resP as any).ok
+            ? { ok: true, name: (resP as any).data?.name }
+            : { ok: false, message: (resP as any).message },
+        )
+        setVl(
+          (resL as any).ok
+            ? { ok: true, name: (resL as any).data?.name }
+            : { ok: false, message: (resL as any).message },
+        )
         return
       }
     }
@@ -184,7 +246,7 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
 
   function toggleEntitlement(id: string) {
     setSelectedEntitlements((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     )
   }
 
@@ -194,7 +256,8 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
       return
     }
     const name = autoName ? generatedName : `${baseName}`
-    const duration = durationDays && durationDays > 0 ? durationDays * 24 * 60 * 60 : undefined
+    const duration =
+      durationDays && durationDays > 0 ? durationDays * 24 * 60 * 60 : undefined
     const resp = await createPolicyServer({
       productId: kp,
       name,
@@ -208,7 +271,9 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
       setKl(newId)
       setVl({ ok: true, name })
       pushRecent(LS_RECENT_POLICIES, newId)
-      listPolicies(kp).then(setPolicies).catch(() => {})
+      listPolicies(kp)
+        .then(setPolicies)
+        .catch(() => {})
     }
   }
 
@@ -217,21 +282,25 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
       alert("Please provide source policy and target product ID.")
       return
     }
-    const overrides:any = {}
+    const overrides: any = {}
     if (cloneOverrideName) overrides.name = cloneOverrideName
     if (cloneOverrideSeats != null) overrides.maxMachines = cloneOverrideSeats
-    if (cloneOverrideFloating != null) overrides.floating = cloneOverrideFloating
-    if (cloneOverrideDurationDays != null) overrides.duration = cloneOverrideDurationDays * 24 * 60 * 60
+    if (cloneOverrideFloating != null)
+      overrides.floating = cloneOverrideFloating
+    if (cloneOverrideDurationDays != null)
+      overrides.duration = cloneOverrideDurationDays * 24 * 60 * 60
 
     const resp = await clonePolicyServer({
       sourcePolicyId: cloneSourceId,
       targetProductId: cloneTargetProductId,
-      overrides: Object.keys(overrides).length ? overrides : undefined
+      overrides: Object.keys(overrides).length ? overrides : undefined,
     })
     const newId = (resp as any)?.id
     if (newId) {
       if (cloneTargetProductId === kp) {
-        listPolicies(kp).then(setPolicies).catch(() => {})
+        listPolicies(kp)
+          .then(setPolicies)
+          .catch(() => {})
       }
       setKl(newId)
       pushRecent(LS_RECENT_POLICIES, newId)
@@ -249,13 +318,23 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
       <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2">
         <div>
           <Label>Keygen Product ID (keygen_product)</Label>
-          <Input placeholder="prod_XXXX" value={kp} onChange={(e) => setKp(e.target.value)} />
-          {vp?.ok && kp && <Text className="mt-1">✅ Found: {vp.name ?? "OK"}</Text>}
-          {vp?.ok === false && <Text className="mt-1 text-ui-fg-error">❌ {vp.message}</Text>}
+          <Input
+            placeholder="prod_XXXX"
+            value={kp}
+            onChange={(e) => setKp(e.target.value)}
+          />
+          {vp?.ok && kp && (
+            <Text className="mt-1">✅ Found: {vp.name ?? "OK"}</Text>
+          )}
+          {vp?.ok === false && (
+            <Text className="mt-1 text-ui-fg-error">❌ {vp.message}</Text>
+          )}
           {recentProducts.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {recentProducts.map((id) => (
-                <Badge key={id} onClick={() => setKp(id)} variant="secondary">{id}</Badge>
+                <Badge key={id} onClick={() => setKp(id)} variant="secondary">
+                  {id}
+                </Badge>
               ))}
             </div>
           )}
@@ -263,23 +342,37 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
 
         <div>
           <Label>Keygen Policy ID (keygen_policy)</Label>
-          <Input placeholder="pol_XXXX" value={kl} onChange={(e) => setKl(e.target.value)} />
-          {vl?.ok && kl && <Text className="mt-1">✅ Found: {vl.name ?? "OK"}</Text>}
-          {vl?.ok === false && <Text className="mt-1 text-ui-fg-error">❌ {vl.message}</Text>}
+          <Input
+            placeholder="pol_XXXX"
+            value={kl}
+            onChange={(e) => setKl(e.target.value)}
+          />
+          {vl?.ok && kl && (
+            <Text className="mt-1">✅ Found: {vl.name ?? "OK"}</Text>
+          )}
+          {vl?.ok === false && (
+            <Text className="mt-1 text-ui-fg-error">❌ {vl.message}</Text>
+          )}
           {recentPolicies.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {recentPolicies.map((id) => (
-                <Badge key={id} onClick={() => setKl(id)} variant="secondary">{id}</Badge>
+                <Badge key={id} onClick={() => setKl(id)} variant="secondary">
+                  {id}
+                </Badge>
               ))}
             </div>
           )}
           {policies.length > 0 && (
             <div className="mt-3">
-                <Label>Existing policies (for this product)</Label>
+              <Label>Existing policies (for this product)</Label>
               <div className="mt-2 flex flex-col gap-2">
                 {policies.map((p) => (
-                  <Button key={p.id} variant="secondary" onClick={() => setKl(p.id)}>
-                    {(p.name ?? p.id)} — {p.id}
+                  <Button
+                    key={p.id}
+                    variant="secondary"
+                    onClick={() => setKl(p.id)}
+                  >
+                    {p.name ?? p.id} — {p.id}
                   </Button>
                 ))}
               </div>
@@ -290,32 +383,57 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
         <div className="col-span-1 md:col-span-2 flex items-center gap-3">
           <Switch checked={autoValidate} onCheckedChange={setAutoValidate} />
           <Text>Automatically validate before saving</Text>
-          <Button variant="secondary" onClick={handleValidate}>Validate only</Button>
+          <Button variant="secondary" onClick={handleValidate}>
+            Validate only
+          </Button>
           <div className="flex-1" />
-          <Button disabled={!canSave} onClick={handleSave}>Save</Button>
+          <Button disabled={!canSave} onClick={handleSave}>
+            Save
+          </Button>
         </div>
       </div>
 
       <div className="px-6 pb-6 space-y-3">
         <Heading level="h3">Create policy (advanced)</Heading>
-        <Text className="text-ui-fg-subtle">Name can be generated automatically if desired.</Text>
+        <Text className="text-ui-fg-subtle">
+          Name can be generated automatically if desired.
+        </Text>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2">
-          <Checkbox checked={autoName} onCheckedChange={setAutoName} />
-          <Label className="ml-2">Generate name automatically</Label>
-          {autoName && <Text className="block mt-1">Preview: <strong>{generatedName}</strong></Text>}
+            <Checkbox checked={autoName} onCheckedChange={setAutoName} />
+            <Label className="ml-2">Generate name automatically</Label>
+            {autoName && (
+              <Text className="block mt-1">
+                Preview: <strong>{generatedName}</strong>
+              </Text>
+            )}
           </div>
           <div>
             <Label>Base name</Label>
-            <Input placeholder="Annual" value={baseName} onChange={(e) => setBaseName(e.target.value)} disabled={autoName} />
+            <Input
+              placeholder="Annual"
+              value={baseName}
+              onChange={(e) => setBaseName(e.target.value)}
+              disabled={autoName}
+            />
           </div>
           <div>
             <Label>Seats (maxMachines)</Label>
-            <Input type="number" min={1} value={seats} onChange={(e) => setSeats(parseInt(e.target.value || "1"))} />
+            <Input
+              type="number"
+              min={1}
+              value={seats}
+              onChange={(e) => setSeats(parseInt(e.target.value || "1"))}
+            />
           </div>
           <div>
             <Label>Duration (days)</Label>
-            <Input type="number" min={0} value={durationDays} onChange={(e) => setDurationDays(parseInt(e.target.value || "0"))} />
+            <Input
+              type="number"
+              min={0}
+              value={durationDays}
+              onChange={(e) => setDurationDays(parseInt(e.target.value || "0"))}
+            />
             <Text className="text-ui-fg-subtle">0 = unlimited</Text>
           </div>
           <div className="flex items-center gap-2">
@@ -326,7 +444,7 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
 
         {entitlements.length > 0 && (
           <div className="mt-3">
-              <Label>Attach entitlements</Label>
+            <Label>Attach entitlements</Label>
             <div className="mt-2 flex flex-wrap gap-2">
               {entitlements.map((e) => {
                 const checked = selectedEntitlements.includes(e.id)
@@ -356,29 +474,62 @@ const KeygenProductWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <Label>Source policy ID</Label>
-            <Input placeholder="pol_XXXX" value={cloneSourceId} onChange={(e) => setCloneSourceId(e.target.value)} />
+            <Input
+              placeholder="pol_XXXX"
+              value={cloneSourceId}
+              onChange={(e) => setCloneSourceId(e.target.value)}
+            />
           </div>
           <div>
             <Label>Target product ID</Label>
-            <Input placeholder="prod_XXXX" value={cloneTargetProductId} onChange={(e) => setCloneTargetProductId(e.target.value)} />
+            <Input
+              placeholder="prod_XXXX"
+              value={cloneTargetProductId}
+              onChange={(e) => setCloneTargetProductId(e.target.value)}
+            />
           </div>
           <div className="md:col-span-2">
             <Text className="text-ui-fg-subtle">Optional overrides:</Text>
           </div>
           <div>
             <Label>Name</Label>
-            <Input placeholder="(leave empty for original)" value={cloneOverrideName} onChange={(e) => setCloneOverrideName(e.target.value)} />
+            <Input
+              placeholder="(leave empty for original)"
+              value={cloneOverrideName}
+              onChange={(e) => setCloneOverrideName(e.target.value)}
+            />
           </div>
           <div>
             <Label>Seats (maxMachines)</Label>
-            <Input type="number" placeholder="(leave empty)" value={cloneOverrideSeats ?? ""} onChange={(e) => setCloneOverrideSeats(e.target.value ? parseInt(e.target.value) : undefined)} />
+            <Input
+              type="number"
+              placeholder="(leave empty)"
+              value={cloneOverrideSeats ?? ""}
+              onChange={(e) =>
+                setCloneOverrideSeats(
+                  e.target.value ? parseInt(e.target.value) : undefined,
+                )
+              }
+            />
           </div>
           <div>
             <Label>Duration (days)</Label>
-            <Input type="number" placeholder="(leave empty)" value={cloneOverrideDurationDays ?? ""} onChange={(e) => setCloneOverrideDurationDays(e.target.value ? parseInt(e.target.value) : undefined)} />
+            <Input
+              type="number"
+              placeholder="(leave empty)"
+              value={cloneOverrideDurationDays ?? ""}
+              onChange={(e) =>
+                setCloneOverrideDurationDays(
+                  e.target.value ? parseInt(e.target.value) : undefined,
+                )
+              }
+            />
           </div>
           <div className="flex items-center gap-2">
-            <Checkbox checked={cloneOverrideFloating ?? false} onCheckedChange={(v) => setCloneOverrideFloating(v as boolean)} />
+            <Checkbox
+              checked={cloneOverrideFloating ?? false}
+              onCheckedChange={(v) => setCloneOverrideFloating(v as boolean)}
+            />
             <Label>Set floating (leave empty for original)</Label>
           </div>
         </div>

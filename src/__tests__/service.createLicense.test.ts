@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 vi.mock("@medusajs/framework", () => ({
@@ -14,7 +13,9 @@ vi.mock("@medusajs/framework/utils", () => {
     primaryKey: () => chain(),
     default: () => chain(),
   })
-  return { model: { define: vi.fn(() => ({})), text: chain, id: chain, enum: chain } }
+  return {
+    model: { define: vi.fn(() => ({})), text: chain, id: chain, enum: chain },
+  }
 })
 
 import KeygenService from "../modules/keygen/service"
@@ -27,8 +28,8 @@ describe("KeygenService.createLicense", () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        data: { id: "lic_123", attributes: { key: "AAAA-BBBB-CCCC" } }
-      })
+        data: { id: "lic_123", attributes: { key: "AAAA-BBBB-CCCC" } },
+      }),
     })
     process.env.KEYGEN_ACCOUNT = "acct_123"
     process.env.KEYGEN_TOKEN = "tok_123"
@@ -38,12 +39,14 @@ describe("KeygenService.createLicense", () => {
     const svc = new (KeygenService as any)(container, {})
     // mock repository call
     svc.createKeygenLicenses = vi.fn().mockResolvedValue({
-      data: [{
-        id: "db_1",
-        order_id: "order_1",
-        license_key: "AAAA-BBBB-CCCC",
-        keygen_license_id: "lic_123",
-      }]
+      data: [
+        {
+          id: "db_1",
+          order_id: "order_1",
+          license_key: "AAAA-BBBB-CCCC",
+          keygen_license_id: "lic_123",
+        },
+      ],
     })
 
     const { record, raw } = await svc.createLicense({
@@ -51,7 +54,7 @@ describe("KeygenService.createLicense", () => {
       orderItemId: "item_1",
       policyId: "pol_1",
       productId: "prod_1",
-      metadata: { foo: "bar" }
+      metadata: { foo: "bar" },
     })
 
     expect(global.fetch).toHaveBeenCalled()

@@ -17,7 +17,9 @@ vi.mock("@medusajs/framework/utils", () => {
     primaryKey: () => chain(),
     default: () => chain(),
   })
-  return { model: { define: vi.fn(() => ({})), text: chain, id: chain, enum: chain } }
+  return {
+    model: { define: vi.fn(() => ({})), text: chain, id: chain, enum: chain },
+  }
 })
 
 import orderPlacedSubscriber from "../subscribers/order-placed"
@@ -26,7 +28,11 @@ import KeygenService from "../modules/keygen/service"
 
 const buildContainer = () => {
   const logger = { info: vi.fn(), error: vi.fn() }
-  const keygen = { createLicense: vi.fn().mockResolvedValue({ record: { license_key: "AAAA" } }) }
+  const keygen = {
+    createLicense: vi
+      .fn()
+      .mockResolvedValue({ record: { license_key: "AAAA" } }),
+  }
   const order = {
     id: "order_1",
     customer_id: "cust_1",
@@ -82,7 +88,7 @@ describe("orderPlacedSubscriber", () => {
       },
     })
     expect(logger.info).toHaveBeenCalledWith(
-      `[keygen] license created for order order_1 / item item_1: AAAA`
+      `[keygen] license created for order order_1 / item item_1: AAAA`,
     )
   })
 

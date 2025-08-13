@@ -1,4 +1,3 @@
-
 import { MedusaService } from "@medusajs/framework"
 import type { MedusaContainer } from "@medusajs/framework/types"
 import KeygenLicense from "./models/license"
@@ -23,7 +22,7 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
 
   constructor(
     protected readonly container: MedusaContainer,
-    options: KeygenPluginOptions = {}
+    options: KeygenPluginOptions = {},
   ) {
     // @ts-ignore MedusaService factory expands constructor
     super(...arguments)
@@ -68,13 +67,13 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
         },
         body: JSON.stringify(body),
         signal: controller.signal,
-      }
+      },
     ).finally(() => clearTimeout(id))
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "")
       throw new Error(
-        `[keygen] create license failed: ${res.status} ${res.statusText} ${errText}`
+        `[keygen] create license failed: ${res.status} ${res.statusText} ${errText}`,
       )
     }
 

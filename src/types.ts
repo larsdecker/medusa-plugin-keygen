@@ -1,4 +1,3 @@
-
 export type KeygenPluginOptions = {
   policyMetadataKey?: string
   productMetadataKey?: string

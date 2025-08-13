@@ -1,4 +1,3 @@
-
 import type { LoaderOptions } from "@medusajs/framework/types"
 import KeygenService from "./modules/keygen/service"
 import orderPlacedSubscriber from "./subscribers/order-placed"

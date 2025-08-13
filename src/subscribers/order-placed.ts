@@ -1,4 +1,3 @@
-
 import type { SubscriberArgs, OrderPlacedPayload } from "@medusajs/medusa"
 import { ContainerRegistrationKeys } from "@medusajs/framework"
 import KeygenService from "../modules/keygen/service"
@@ -13,11 +12,15 @@ export default async function orderPlacedSubscriber({
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const config = container.resolve<any>(ContainerRegistrationKeys.CONFIG_MODULE)
   const pluginCfg = (config?.plugins || []).find(
-    (p: any) => typeof p?.resolve === "string" && p.resolve.includes("medusa-plugin-keygen")
+    (p: any) =>
+      typeof p?.resolve === "string" &&
+      p.resolve.includes("medusa-plugin-keygen"),
   )
   const options: KeygenPluginOptions = pluginCfg?.options || {}
 
-  const keygen = container.resolve<KeygenService>(KeygenService.registrationName)
+  const keygen = container.resolve<KeygenService>(
+    KeygenService.registrationName,
+  )
 
   try {
     const query = container.resolve(ContainerRegistrationKeys.QUERY)
@@ -64,7 +67,7 @@ export default async function orderPlacedSubscriber({
       })
 
       logger.info(
-        `[keygen] license created for order ${order.id} / item ${item.id}: ${record?.license_key}`
+        `[keygen] license created for order ${order.id} / item ${item.id}: ${record?.license_key}`,
       )
     }
   } catch (e: any) {

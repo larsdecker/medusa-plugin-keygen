@@ -1,4 +1,3 @@
-
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
@@ -29,7 +28,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(r.status).json({ message: text || r.statusText })
   }
 
-  const json = await r.json() as any
+  const json = (await r.json()) as any
   const data = (json?.data || []).map((p: any) => ({
     id: p?.id,
     name: p?.attributes?.name,
@@ -45,17 +44,20 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
 
-  const { productId, name, maxMachines, floating, duration, entitlementIds } = (req.body ?? {}) as {
-    productId: string
-    name: string
-    maxMachines?: number
-    floating?: boolean
-    duration?: number
-    entitlementIds?: string[]
-  }
+  const { productId, name, maxMachines, floating, duration, entitlementIds } =
+    (req.body ?? {}) as {
+      productId: string
+      name: string
+      maxMachines?: number
+      floating?: boolean
+      duration?: number
+      entitlementIds?: string[]
+    }
 
   if (!productId || !name) {
-    return res.status(400).json({ message: "productId and name are required fields" })
+    return res
+      .status(400)
+      .json({ message: "productId and name are required fields" })
   }
 
   const payload: any = {
@@ -68,43 +70,52 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         ...(typeof duration === "number" ? { duration } : {}),
       },
       relationships: {
-        product: { data: { type: "products", id: productId } }
-      }
-    }
-  }
-
-  const r = await fetch(`https://api.keygen.sh/v1/accounts/${account}/policies`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-      "Content-Type": "application/json",
+        product: { data: { type: "products", id: productId } },
+      },
     },
-    body: JSON.stringify(payload),
-  })
-
-  if (!r.ok) {
-    const text = await r.text().catch(() => "")
-    return res.status(r.status).json({ message: text || r.statusText })
   }
 
-  const json = await r.json() as any
-  const id = json?.data?.id
-  const createdName = json?.data?.attributes?.name
-
-  // attach entitlements if provided
-  if (id && Array.isArray(entitlementIds) && entitlementIds.length > 0) {
-    await fetch(`https://api.keygen.sh/v1/accounts/${account}/policies/${id}/relationships/entitlements`, {
+  const r = await fetch(
+    `https://api.keygen.sh/v1/accounts/${account}/policies`,
+    {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        data: entitlementIds.map((eid) => ({ type: "entitlements", id: eid }))
-      })
-    })
+      body: JSON.stringify(payload),
+    },
+  )
+
+  if (!r.ok) {
+    const text = await r.text().catch(() => "")
+    return res.status(r.status).json({ message: text || r.statusText })
+  }
+
+  const json = (await r.json()) as any
+  const id = json?.data?.id
+  const createdName = json?.data?.attributes?.name
+
+  // attach entitlements if provided
+  if (id && Array.isArray(entitlementIds) && entitlementIds.length > 0) {
+    await fetch(
+      `https://api.keygen.sh/v1/accounts/${account}/policies/${id}/relationships/entitlements`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          data: entitlementIds.map((eid) => ({
+            type: "entitlements",
+            id: eid,
+          })),
+        }),
+      },
+    )
   }
 
   return res.status(201).json({ id, name: createdName })

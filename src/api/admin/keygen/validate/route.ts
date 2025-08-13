@@ -1,8 +1,10 @@
-
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
-  const { type, id } = (req.body ?? {}) as { type: "product" | "policy"; id: string }
+  const { type, id } = (req.body ?? {}) as {
+    type: "product" | "policy"
+    id: string
+  }
   const account = process.env.KEYGEN_ACCOUNT
   const token = process.env.KEYGEN_TOKEN
 
