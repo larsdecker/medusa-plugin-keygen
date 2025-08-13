@@ -22,42 +22,42 @@ vi.mock("@medusajs/framework/utils", () => {
 
 import orderCanceledSubscriber from "../subscribers/order-canceled"
 import { ContainerRegistrationKeys } from "@medusajs/framework"
+import KeygenService from "../modules/keygen/service"
 
 const buildContainer = () => {
   const logger = { info: vi.fn(), error: vi.fn() }
   const query = { graph: vi.fn() }
-  const config = { plugins: [{ resolve: "medusa-plugin-keygen", options: {} }] }
+  const keygen = { suspendLicense: vi.fn() }
 
   const container = {
     resolve(key: string) {
       switch (key) {
         case ContainerRegistrationKeys.LOGGER:
+        case "logger":
           return logger
-        case ContainerRegistrationKeys.CONFIG_MODULE:
-        case "configModule":
-          return config
         case ContainerRegistrationKeys.QUERY:
+        case "query":
           return query
+        case KeygenService.registrationName:
+          return keygen
         default:
           return undefined
       }
     },
   }
 
-  return { container, logger, query }
+  return { container, logger, query, keygen }
 }
 
 describe("orderCanceledSubscriber", () => {
   beforeEach(() => {
-    // @ts-ignore
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
     process.env.KEYGEN_ACCOUNT = "acct_123"
     process.env.KEYGEN_TOKEN = "tok_123"
     delete process.env.KEYGEN_HOST
   })
 
   it("suspends licenses for canceled order", async () => {
-    const { container, logger, query } = buildContainer()
+    const { container, logger, query, keygen } = buildContainer()
     query.graph = vi
       .fn()
       .mockResolvedValueOnce({
@@ -72,10 +72,7 @@ describe("orderCanceledSubscriber", () => {
       event: { name: "order.canceled", data: { id: "order_1" } } as any,
     })
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      "https://api.keygen.sh/v1/accounts/acct_123/licenses/lic_1/actions/suspend",
-      expect.objectContaining({ method: "POST" })
-    )
+    expect(keygen.suspendLicense).toHaveBeenCalledWith("lic_1")
     expect(query.graph).toHaveBeenLastCalledWith({
       entity: "keygen_license",
       data: [{ id: "db_1", status: "suspended" }],
@@ -86,12 +83,12 @@ describe("orderCanceledSubscriber", () => {
   })
 
   it("ignores non order canceled events", async () => {
-    const { container, logger } = buildContainer()
+    const { container, logger, keygen } = buildContainer()
     await orderCanceledSubscriber({
       container: container as any,
       event: { name: "order.updated", data: { id: "order_1" } } as any,
     })
-    expect(global.fetch).not.toHaveBeenCalled()
+    expect(keygen.suspendLicense).not.toHaveBeenCalled()
     expect(logger.info).not.toHaveBeenCalled()
   })
 })
