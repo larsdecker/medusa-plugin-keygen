@@ -1,5 +1,22 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
+
+vi.mock("@medusajs/framework", () => ({
+  MedusaService: () => class {},
+  ContainerRegistrationKeys: {},
+}))
+
+vi.mock("@medusajs/framework/utils", () => {
+  const chain = () => ({
+    index: () => chain(),
+    nullable: () => chain(),
+    searchable: () => chain(),
+    primaryKey: () => chain(),
+    default: () => chain(),
+  })
+  return { model: { define: vi.fn(() => ({})), text: chain, id: chain, enum: chain } }
+})
+
 import KeygenService from "../modules/keygen/service"
 
 const container: any = {}
