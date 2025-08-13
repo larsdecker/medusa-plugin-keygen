@@ -55,6 +55,8 @@ KEYGEN_TOKEN=your-api-token
 KEYGEN_HOST=https://keygen.example.com
 ```
 
+A `.env.example` file is included with placeholder values for these variables.
+
 ### Self-hosted example
 
 If you host Keygen yourself, point the plugin to your instance by setting
