@@ -1,7 +1,4 @@
-
-import { MedusaService } from "@medusajs/framework"
 import type { MedusaContainer } from "@medusajs/framework/types"
-import KeygenLicense from "./models/license"
 import type { KeygenPluginOptions } from "../../types"
 
 type CreateInput = {
@@ -14,7 +11,7 @@ type CreateInput = {
   metadata?: Record<string, unknown>
 }
 
-export default class KeygenService extends MedusaService({ KeygenLicense }) {
+export default class KeygenService {
   static readonly registrationName = "keygenService"
   private account: string
   private token: string
@@ -27,13 +24,12 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
     protected readonly container: MedusaContainer,
     options: KeygenPluginOptions = {}
   ) {
-    // @ts-ignore MedusaService factory expands constructor
-    super(...arguments)
     this.options = options
     this.account = process.env.KEYGEN_ACCOUNT || ""
     this.token = process.env.KEYGEN_TOKEN || ""
     this.timeout = options.timeoutMs ?? 10000
-    this.host = options.host || process.env.KEYGEN_HOST || "https://api.keygen.sh"
+    this.host =
+      options.host || process.env.KEYGEN_HOST || "https://api.keygen.sh"
     this.version = process.env.KEYGEN_VERSION || "1.8"
     if (!this.account || !this.token) {
       console.warn("[keygen] Missing KEYGEN_ACCOUNT or KEYGEN_TOKEN")
@@ -87,20 +83,24 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
     const licenseId = payload?.data?.id
     const key = payload?.data?.attributes?.key || null
 
-    // @ts-ignore generated repository via factory
-    const { data } = await this.createKeygenLicenses({
-      data: {
-        order_id: input.orderId,
-        order_item_id: input.orderItemId ?? null,
-        customer_id: input.customerId ?? null,
-        keygen_license_id: licenseId,
-        license_key: key,
-        status: "created",
-        keygen_policy_id: input.policyId ?? null,
-        keygen_product_id: input.productId ?? null,
-      },
+    const query = this.container.resolve<any>("query")
+    const { data } = await query.graph({
+      entity: "keygen_license",
+      data: [
+        {
+          order_id: input.orderId,
+          order_item_id: input.orderItemId ?? null,
+          customer_id: input.customerId ?? null,
+          keygen_license_id: licenseId,
+          license_key: key,
+          status: "created",
+          keygen_policy_id: input.policyId ?? null,
+          keygen_product_id: input.productId ?? null,
+        },
+      ],
     })
 
-    return { record: data[0], raw: payload }
+    return { record: data?.[0], raw: payload }
   }
 }
+
