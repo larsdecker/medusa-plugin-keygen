@@ -48,6 +48,7 @@ const buildContainer = () => {
         case ContainerRegistrationKeys.LOGGER:
           return logger
         case ContainerRegistrationKeys.CONFIG_MODULE:
+        case "configModule":
           return config
         case ContainerRegistrationKeys.QUERY:
           return query
