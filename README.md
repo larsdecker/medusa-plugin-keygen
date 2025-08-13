@@ -5,8 +5,11 @@ Medusa v2 plugin that creates **licenses via keygen.sh** when an order is placed
 Includes **admin widgets** (product & variant) and **admin server routes** (validation, policy management).
 
 ## Features
-- **Subscriber**: listens for `order.placed` and creates a license for each line item
+- **Subscriber**: listens for `order.placed` (creates a license for each line item),
+  `order.canceled` (suspends licenses) and `order.refunded` (revokes licenses)
 - **Data Model**: `keygen_license` table (order_id, license_id, key, status, etc.)
+- **Status values**: `created` (active), `suspended` (after cancellation),
+  `revoked` (after refund)
 - **Admin Widgets**:
   - Product: set `keygen_product` / `keygen_policy`, view/create/clone policies, select entitlements
   - Variant: set metadata per variant (override)
@@ -54,6 +57,8 @@ KEYGEN_TOKEN=your-api-token
 # defaults to https://api.keygen.sh
 KEYGEN_HOST=https://keygen.example.com
 ```
+
+See `.env.example` for a template of these variables.
 
 ### Self-hosted example
 
