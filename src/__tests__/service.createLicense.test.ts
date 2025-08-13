@@ -19,7 +19,8 @@ vi.mock("@medusajs/framework/utils", () => {
 
 import KeygenService from "../modules/keygen/service"
 
-const container: any = {}
+let container: any
+let query: any
 
 describe("KeygenService.createLicense", () => {
   beforeEach(() => {
@@ -33,19 +34,30 @@ describe("KeygenService.createLicense", () => {
     process.env.KEYGEN_ACCOUNT = "acct_123"
     process.env.KEYGEN_TOKEN = "tok_123"
     delete process.env.KEYGEN_HOST
+    query = { graph: vi.fn().mockResolvedValue({ data: [] }) }
+    container = {
+      resolve(key: string) {
+        if (key === "query") {
+          return query
+        }
+        return undefined
+      },
+    }
   })
 
   it("creates a license and stores record", async () => {
-    const svc = new (KeygenService as any)(container, {})
-    // mock repository call
-    svc.createKeygenLicenses = vi.fn().mockResolvedValue({
-      data: [{
-        id: "db_1",
-        order_id: "order_1",
-        license_key: "AAAA-BBBB-CCCC",
-        keygen_license_id: "lic_123",
-      }]
+    query.graph = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "db_1",
+          order_id: "order_1",
+          license_key: "AAAA-BBBB-CCCC",
+          keygen_license_id: "lic_123",
+        },
+      ],
     })
+
+    const svc = new (KeygenService as any)(container, {})
 
     const { record, raw } = await svc.createLicense({
       orderId: "order_1",
@@ -68,7 +80,6 @@ describe("KeygenService.createLicense", () => {
   it("uses custom host from env", async () => {
     process.env.KEYGEN_HOST = "https://custom.example.com"
     const svc = new (KeygenService as any)(container, {})
-    svc.createKeygenLicenses = vi.fn().mockResolvedValue({ data: [] })
 
     await svc.createLicense({ orderId: "order_1" })
 
