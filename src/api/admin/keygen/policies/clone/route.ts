@@ -25,7 +25,8 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   }
 
   // 1) Read source policy
-  const src = await fetch(`https://api.keygen.sh/v1/accounts/${account}/policies/${sourcePolicyId}`, {
+  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
+  const src = await fetch(`${host}/v1/accounts/${account}/policies/${sourcePolicyId}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
   })
   if (!src.ok) {
@@ -51,7 +52,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   }
 
   // 2) Create new policy on target product
-  const r = await fetch(`https://api.keygen.sh/v1/accounts/${account}/policies`, {
+  const r = await fetch(`${host}/v1/accounts/${account}/policies`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -72,7 +73,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   // 3) Entitlements: clone from source unless overrides specify a custom set
   let entitlementsToAttach: string[] | undefined = overrides?.entitlementIds
   if (!entitlementsToAttach) {
-    const ents = await fetch(`https://api.keygen.sh/v1/accounts/${account}/policies/${sourcePolicyId}/entitlements`, {
+    const ents = await fetch(`${host}/v1/accounts/${account}/policies/${sourcePolicyId}/entitlements`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
     })
     if (ents.ok) {
@@ -82,7 +83,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   }
 
   if (newId && entitlementsToAttach && entitlementsToAttach.length > 0) {
-    await fetch(`https://api.keygen.sh/v1/accounts/${account}/policies/${newId}/relationships/entitlements`, {
+    await fetch(`${host}/v1/accounts/${account}/policies/${newId}/relationships/entitlements`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

@@ -8,7 +8,8 @@ export const GET = async (_req: MedusaRequest, res: MedusaResponse) => {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
 
-  const r = await fetch(`https://api.keygen.sh/v1/accounts/${account}/entitlements`, {
+  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
+  const r = await fetch(`${host}/v1/accounts/${account}/entitlements`, {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",

@@ -1,5 +1,10 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
+
+vi.mock("@medusajs/framework", () => ({
+  MedusaService: () => class {},
+}))
+
 import KeygenService from "../modules/keygen/service"
 
 const container: any = {}
@@ -15,6 +20,7 @@ describe("KeygenService.createLicense", () => {
     })
     process.env.KEYGEN_ACCOUNT = "acct_123"
     process.env.KEYGEN_TOKEN = "tok_123"
+    delete process.env.KEYGEN_HOST
   })
 
   it("creates a license and stores record", async () => {
@@ -40,5 +46,18 @@ describe("KeygenService.createLicense", () => {
     expect(global.fetch).toHaveBeenCalled()
     expect(record.license_key).toBe("AAAA-BBBB-CCCC")
     expect(raw.data.id).toBe("lic_123")
+  })
+
+  it("uses custom host from env", async () => {
+    process.env.KEYGEN_HOST = "https://custom.example.com"
+    const svc = new (KeygenService as any)(container, {})
+    svc.createKeygenLicenses = vi.fn().mockResolvedValue({ data: [] })
+
+    await svc.createLicense({ orderId: "order_1" })
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://custom.example.com/v1/accounts/acct_123/licenses",
+      expect.any(Object)
+    )
   })
 })
