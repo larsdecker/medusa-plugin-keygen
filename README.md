@@ -16,6 +16,10 @@ Includes **admin widgets** (product & variant) and **admin server routes** (vali
   - `POST /admin/keygen/policies` (including entitlements)
   - `POST /admin/keygen/policies/clone`
   - `GET /admin/keygen/entitlements`
+  - `GET/POST /admin/keygen/licenses/:order_id`
+
+The licenses endpoint lets you fetch existing licenses for an order or manually
+generate them if needed.
 
 ## Installation
 ```bash
