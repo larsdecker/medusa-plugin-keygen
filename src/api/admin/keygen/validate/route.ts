@@ -13,10 +13,11 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(400).json({ message: "Invalid request" })
   }
 
+  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
   const url =
     type === "product"
-      ? `https://api.keygen.sh/v1/accounts/${account}/products/${id}`
-      : `https://api.keygen.sh/v1/accounts/${account}/policies/${id}`
+      ? `${host}/v1/accounts/${account}/products/${id}`
+      : `${host}/v1/accounts/${account}/policies/${id}`
 
   const r = await fetch(url, {
     headers: {

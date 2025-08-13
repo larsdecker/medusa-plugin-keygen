@@ -9,7 +9,8 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   }
   const productId = (req.query?.productId as string) || ""
 
-  let url = `https://api.keygen.sh/v1/accounts/${account}/policies`
+  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
+  let url = `${host}/v1/accounts/${account}/policies`
   if (productId) {
     const u = new URL(url)
     // filter by product
@@ -73,7 +74,8 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     }
   }
 
-  const r = await fetch(`https://api.keygen.sh/v1/accounts/${account}/policies`, {
+  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
+  const r = await fetch(`${host}/v1/accounts/${account}/policies`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -94,7 +96,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
 
   // attach entitlements if provided
   if (id && Array.isArray(entitlementIds) && entitlementIds.length > 0) {
-    await fetch(`https://api.keygen.sh/v1/accounts/${account}/policies/${id}/relationships/entitlements`, {
+    await fetch(`${host}/v1/accounts/${account}/policies/${id}/relationships/entitlements`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

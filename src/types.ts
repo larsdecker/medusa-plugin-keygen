@@ -5,4 +5,5 @@ export type KeygenPluginOptions = {
   defaultPolicyId?: string
   defaultProductId?: string
   timeoutMs?: number
+  host?: string
 }

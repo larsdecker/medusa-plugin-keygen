@@ -46,7 +46,22 @@ Set the environment variables in your app:
 ```
 KEYGEN_ACCOUNT=your-account-or-slug
 KEYGEN_TOKEN=your-api-token
+# optional: base URL for self-hosted Keygen
+# defaults to https://api.keygen.sh
+KEYGEN_HOST=https://keygen.example.com
 ```
+
+### Self-hosted example
+
+If you host Keygen yourself, point the plugin to your instance by setting
+`KEYGEN_HOST` to your base URL. For example:
+
+```bash
+KEYGEN_HOST=https://licenses.mycompany.com
+```
+
+The plugin will then call your self-hosted API instead of the default
+`https://api.keygen.sh`.
 
 Migrations:
 ```bash

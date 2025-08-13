@@ -19,6 +19,7 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
   private account: string
   private token: string
   private timeout: number
+  private host: string
   private options: KeygenPluginOptions
 
   constructor(
@@ -31,6 +32,7 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
     this.account = process.env.KEYGEN_ACCOUNT || ""
     this.token = process.env.KEYGEN_TOKEN || ""
     this.timeout = options.timeoutMs ?? 10000
+    this.host = options.host || process.env.KEYGEN_HOST || "https://api.keygen.sh"
     if (!this.account || !this.token) {
       console.warn("[keygen] Missing KEYGEN_ACCOUNT or KEYGEN_TOKEN")
     }
@@ -58,7 +60,7 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
     const id = setTimeout(() => controller.abort(), this.timeout)
 
     const res = await fetch(
-      `https://api.keygen.sh/v1/accounts/${this.account}/licenses`,
+      `${this.host}/v1/accounts/${this.account}/licenses`,
       {
         method: "POST",
         headers: {
