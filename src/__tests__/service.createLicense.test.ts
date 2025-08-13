@@ -65,18 +65,27 @@ describe("KeygenService.createLicense", () => {
     expect(raw.data.id).toBe("lic_123")
   })
 
-  it("uses custom host from env", async () => {
-    process.env.KEYGEN_HOST = "https://custom.example.com"
-    const svc = new (KeygenService as any)(container, {})
-    svc.createKeygenLicenses = vi.fn().mockResolvedValue({ data: [] })
+    it("uses custom host from env", async () => {
+      process.env.KEYGEN_HOST = "https://custom.example.com"
+      const svc = new (KeygenService as any)(container, {})
+      svc.createKeygenLicenses = vi.fn().mockResolvedValue({ data: [] })
 
-    await svc.createLicense({ orderId: "order_1" })
+      await svc.createLicense({ orderId: "order_1" })
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      "https://custom.example.com/v1/accounts/acct_123/licenses",
-      expect.objectContaining({
-        headers: expect.objectContaining({ "Keygen-Version": "1.8" })
-      })
-    )
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://custom.example.com/v1/accounts/acct_123/licenses",
+        expect.objectContaining({
+          headers: expect.objectContaining({ "Keygen-Version": "1.8" })
+        })
+      )
+    })
+
+    it("throws a descriptive error on network failure", async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error("Network down"))
+      const svc = new (KeygenService as any)(container, {})
+
+      await expect(svc.createLicense({ orderId: "order_1" })).rejects.toThrow(
+        "[keygen] create license request failed: Network down"
+      )
+    })
   })
-})
