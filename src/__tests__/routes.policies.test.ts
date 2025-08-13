@@ -29,6 +29,12 @@ describe("Policies routes", () => {
     await createPolicy(req, res)
     expect(res.status).toHaveBeenCalledWith(201)
     expect(res.json).toHaveBeenCalledWith({ id: "pol_new", name: "Annual – 2 Seats" })
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.keygen.sh/v1/accounts/acct_123/policies",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "Keygen-Version": "1.8" })
+      })
+    )
   })
 
   it("clones a policy", async () => {
@@ -43,5 +49,20 @@ describe("Policies routes", () => {
     await clonePolicy(req, res)
     expect(res.status).toHaveBeenCalledWith(201)
     expect(res.json).toHaveBeenCalledWith({ id: "pol_cloned" })
+    expect((global as any).fetch).toHaveBeenNthCalledWith(
+      1,
+      "https://api.keygen.sh/v1/accounts/acct_123/policies/pol_src",
+      expect.objectContaining({ headers: expect.objectContaining({ "Keygen-Version": "1.8" }) })
+    )
+    expect((global as any).fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.keygen.sh/v1/accounts/acct_123/policies",
+      expect.objectContaining({ headers: expect.objectContaining({ "Keygen-Version": "1.8" }) })
+    )
+    expect((global as any).fetch).toHaveBeenNthCalledWith(
+      3,
+      "https://api.keygen.sh/v1/accounts/acct_123/policies/pol_src/entitlements",
+      expect.objectContaining({ headers: expect.objectContaining({ "Keygen-Version": "1.8" }) })
+    )
   })
 })

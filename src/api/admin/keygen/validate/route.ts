@@ -5,6 +5,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   const { type, id } = (req.body ?? {}) as { type: "product" | "policy"; id: string }
   const account = process.env.KEYGEN_ACCOUNT
   const token = process.env.KEYGEN_TOKEN
+  const version = process.env.KEYGEN_VERSION || "1.8"
 
   if (!account || !token) {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
@@ -23,6 +24,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
+      "Keygen-Version": version,
     },
   })
 

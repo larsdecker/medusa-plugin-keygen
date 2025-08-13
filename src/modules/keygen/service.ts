@@ -20,6 +20,7 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
   private token: string
   private timeout: number
   private host: string
+  private version: string
   private options: KeygenPluginOptions
 
   constructor(
@@ -33,6 +34,7 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
     this.token = process.env.KEYGEN_TOKEN || ""
     this.timeout = options.timeoutMs ?? 10000
     this.host = options.host || process.env.KEYGEN_HOST || "https://api.keygen.sh"
+    this.version = process.env.KEYGEN_VERSION || "1.8"
     if (!this.account || !this.token) {
       console.warn("[keygen] Missing KEYGEN_ACCOUNT or KEYGEN_TOKEN")
     }
@@ -67,6 +69,7 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
           Authorization: `Bearer ${this.token}`,
           "Content-Type": "application/json",
           Accept: "application/json",
+          "Keygen-Version": this.version,
         },
         body: JSON.stringify(body),
         signal: controller.signal,

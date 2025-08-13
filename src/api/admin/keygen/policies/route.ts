@@ -7,6 +7,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   if (!account || !token) {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
+  const version = process.env.KEYGEN_VERSION || "1.8"
   const productId = (req.query?.productId as string) || ""
 
   const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
@@ -22,6 +23,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
+      "Keygen-Version": version,
     },
   })
 
@@ -45,6 +47,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   if (!account || !token) {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
+  const version = process.env.KEYGEN_VERSION || "1.8"
 
   const { productId, name, maxMachines, floating, duration, entitlementIds } = (req.body ?? {}) as {
     productId: string
@@ -81,6 +84,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
       "Content-Type": "application/json",
+      "Keygen-Version": version,
     },
     body: JSON.stringify(payload),
   })
@@ -102,6 +106,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
         "Content-Type": "application/json",
+        "Keygen-Version": version,
       },
       body: JSON.stringify({
         data: entitlementIds.map((eid) => ({ type: "entitlements", id: eid }))

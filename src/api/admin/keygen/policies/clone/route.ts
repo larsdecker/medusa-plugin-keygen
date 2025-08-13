@@ -7,6 +7,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   if (!account || !token) {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
+  const version = process.env.KEYGEN_VERSION || "1.8"
 
   const { sourcePolicyId, targetProductId, overrides } = (req.body ?? {}) as {
     sourcePolicyId: string
@@ -27,7 +28,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   // 1) Read source policy
   const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
   const src = await fetch(`${host}/v1/accounts/${account}/policies/${sourcePolicyId}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "Keygen-Version": version }
   })
   if (!src.ok) {
     const text = await src.text().catch(() => "")
@@ -58,6 +59,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
       "Content-Type": "application/json",
+      "Keygen-Version": version,
     },
     body: JSON.stringify(payload),
   })
@@ -74,7 +76,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   let entitlementsToAttach: string[] | undefined = overrides?.entitlementIds
   if (!entitlementsToAttach) {
     const ents = await fetch(`${host}/v1/accounts/${account}/policies/${sourcePolicyId}/entitlements`, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "Keygen-Version": version }
     })
     if (ents.ok) {
       const entsJson = await ents.json() as any
@@ -89,6 +91,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
         "Content-Type": "application/json",
+        "Keygen-Version": version,
       },
       body: JSON.stringify({
         data: entitlementsToAttach.map((eid) => ({ type: "entitlements", id: eid }))

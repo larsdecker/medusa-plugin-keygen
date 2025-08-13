@@ -27,6 +27,12 @@ describe("Validate route", () => {
     const res: any = mockRes()
 
     await validate(req, res)
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.keygen.sh/v1/accounts/acct_123/products/prod_1",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "Keygen-Version": "1.8" })
+      })
+    )
     expect(res.json).toHaveBeenCalledWith({ id: "prod_1", type: "product", name: "My Product" })
   })
 
@@ -39,7 +45,9 @@ describe("Validate route", () => {
     await validate(req, res)
     expect(global.fetch).toHaveBeenCalledWith(
       "https://custom.example.com/v1/accounts/acct_123/products/prod_1",
-      expect.any(Object)
+      expect.objectContaining({
+        headers: expect.objectContaining({ "Keygen-Version": "1.8" })
+      })
     )
   })
 })

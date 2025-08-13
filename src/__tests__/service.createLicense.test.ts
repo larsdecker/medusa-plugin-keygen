@@ -55,7 +55,12 @@ describe("KeygenService.createLicense", () => {
       metadata: { foo: "bar" }
     })
 
-    expect(global.fetch).toHaveBeenCalled()
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.keygen.sh/v1/accounts/acct_123/licenses",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "Keygen-Version": "1.8" })
+      })
+    )
     expect(record.license_key).toBe("AAAA-BBBB-CCCC")
     expect(raw.data.id).toBe("lic_123")
   })
@@ -69,7 +74,9 @@ describe("KeygenService.createLicense", () => {
 
     expect(global.fetch).toHaveBeenCalledWith(
       "https://custom.example.com/v1/accounts/acct_123/licenses",
-      expect.any(Object)
+      expect.objectContaining({
+        headers: expect.objectContaining({ "Keygen-Version": "1.8" })
+      })
     )
   })
 })
