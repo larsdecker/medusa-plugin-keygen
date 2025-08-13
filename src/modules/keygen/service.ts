@@ -108,5 +108,40 @@ export default class KeygenService {
 
     return { record: data?.[0], raw: payload }
   }
+
+  async revokeLicense(licenseId: string) {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), this.timeout)
+
+    let res: Response
+    try {
+      res = await fetch(
+        `${this.host}/v1/accounts/${this.account}/licenses/${licenseId}/actions/revoke`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "Keygen-Version": this.version,
+          },
+          signal: controller.signal,
+        },
+      )
+    } catch (e) {
+      throw new Error(
+        `[keygen] revoke license request failed: ${e instanceof Error ? e.message : e}`,
+      )
+    } finally {
+      clearTimeout(id)
+    }
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "")
+      throw new Error(
+        `[keygen] revoke license failed: ${res.status} ${res.statusText} ${errText}`,
+      )
+    }
+  }
 }
 
