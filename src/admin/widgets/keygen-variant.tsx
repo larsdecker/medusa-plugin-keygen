@@ -3,26 +3,10 @@ import { defineWidgetConfig } from "@medusajs/admin-sdk"
 import type { DetailWidgetProps, AdminProductVariant } from "@medusajs/framework/types"
 import { Container, Heading, Input, Button, Label, Text, Badge, Switch } from "@medusajs/ui"
 import { useEffect, useMemo, useState } from "react"
+import { loadRecent, validateOnServer } from "../utils/keygen"
 
 const LS_RECENT_PRODUCTS = "keygen_recent_products"
 const LS_RECENT_POLICIES = "keygen_recent_policies"
-const loadRecent = (k: string): string[] => { try { return JSON.parse(localStorage.getItem(k) || "[]") } catch { return [] } }
-
-async function validateOnServer(type: "product" | "policy", id: string) {
-  if (!id) return { ok: false, message: "ID missing" }
-  const res = await fetch(`/admin/keygen/validate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, id }),
-    credentials: "include",
-  })
-  if (!res.ok) {
-    const t = await res.text().catch(() => "")
-    return { ok: false, message: `Error ${res.status}: ${t}` }
-  }
-  const json = await res.json()
-  return { ok: true, data: json }
-}
 
 async function patchVariantMetadata(variantId: string, meta: Record<string, any>) {
   const res = await fetch(`/admin/variants/${variantId}`, {
