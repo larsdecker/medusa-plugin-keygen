@@ -59,5 +59,23 @@ describe("Licenses routes", () => {
     expect(res.status).toHaveBeenCalledWith(201)
     expect(res.json).toHaveBeenCalledWith({ license: record })
   })
+
+  it("requires policyId or productId", async () => {
+    const keygenService = {
+      createLicense: vi.fn(),
+    }
+    const req: any = {
+      params: { order_id: "order_1" },
+      body: {},
+      scope: { resolve: (key: string) => (key === "keygenService" ? keygenService : undefined) },
+    }
+    const res: any = mockRes()
+
+    await POST(req, res)
+
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(res.json).toHaveBeenCalledWith({ message: "policyId or productId required" })
+    expect(keygenService.createLicense).not.toHaveBeenCalled()
+  })
 })
 

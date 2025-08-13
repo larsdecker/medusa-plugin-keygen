@@ -58,7 +58,8 @@ KEYGEN_TOKEN=your-api-token
 KEYGEN_HOST=https://keygen.example.com
 ```
 
-See `.env.example` for a template of these variables.
+
+A `.env.example` file is included with placeholder values for these variables.
 
 ### Self-hosted example
 
