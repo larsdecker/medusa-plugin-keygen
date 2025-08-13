@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "declaration": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "outDir": ".medusa/server",
+    "rootDir": "src",
+    "resolveJsonModule": true,
+    "strict": true,
+    "types": [
+      "vitest/globals"
+    ]
+  },
+  "include": [
+    "src"
+  ]
+}

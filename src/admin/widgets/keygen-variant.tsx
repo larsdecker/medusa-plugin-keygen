@@ -1,0 +1,138 @@
+
+import { defineWidgetConfig } from "@medusajs/admin-sdk"
+import type { DetailWidgetProps, AdminProductVariant } from "@medusajs/framework/types"
+import { Container, Heading, Input, Button, Label, Text, Badge, Switch } from "@medusajs/ui"
+import { useEffect, useMemo, useState } from "react"
+
+const LS_RECENT_PRODUCTS = "keygen_recent_products"
+const LS_RECENT_POLICIES = "keygen_recent_policies"
+const loadRecent = (k: string): string[] => { try { return JSON.parse(localStorage.getItem(k) || "[]") } catch { return [] } }
+
+async function validateOnServer(type: "product" | "policy", id: string) {
+  if (!id) return { ok: false, message: "ID fehlt" }
+  const res = await fetch(`/admin/keygen/validate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, id }),
+    credentials: "include",
+  })
+  if (!res.ok) {
+    const t = await res.text().catch(() => "")
+    return { ok: false, message: `Fehler ${res.status}: ${t}` }
+  }
+  const json = await res.json()
+  return { ok: true, data: json }
+}
+
+async function patchVariantMetadata(variantId: string, meta: Record<string, any>) {
+  const res = await fetch(`/admin/variants/${variantId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ metadata: meta }),
+  })
+  if (!res.ok) {
+    const t = await res.text().catch(() => "")
+    throw new Error(`Update failed: ${res.status} ${t}`)
+  }
+  return await res.json()
+}
+
+const KeygenVariantWidget = ({ data }: DetailWidgetProps<AdminProductVariant>) => {
+  const currentMeta = data?.metadata ?? {}
+  const [kp, setKp] = useState<string>(String(currentMeta["keygen_product"] ?? ""))
+  const [kl, setKl] = useState<string>(String(currentMeta["keygen_policy"] ?? ""))
+  const [vp, setVp] = useState<{ok:boolean;message?:string;name?:string}|null>(null)
+  const [vl, setVl] = useState<{ok:boolean;message?:string;name?:string}|null>(null)
+  const [autoValidate, setAutoValidate] = useState(true)
+
+  const canSave = useMemo(() => kp !== String(currentMeta["keygen_product"] ?? "") ||
+                                  kl !== String(currentMeta["keygen_policy"] ?? ""), [kp, kl, currentMeta])
+
+  const [recentProducts, setRecentProducts] = useState<string[]>([])
+  const [recentPolicies, setRecentPolicies] = useState<string[]>([])
+  useEffect(() => {
+    setRecentProducts(loadRecent(LS_RECENT_PRODUCTS))
+    setRecentPolicies(loadRecent(LS_RECENT_POLICIES))
+  }, [])
+
+  async function handleValidate() {
+    const resP = kp ? await validateOnServer("product", kp) : { ok: true }
+    const resL = kl ? await validateOnServer("policy", kl) : { ok: true }
+    setVp(resP.ok ? { ok:true, name: (resP as any).data?.name } : { ok:false, message: (resP as any).message })
+    setVl(resL.ok ? { ok:true, name: (resL as any).data?.name } : { ok:false, message: (resL as any).message })
+  }
+
+  async function handleSave() {
+    if (autoValidate) {
+      const resP = kp ? await validateOnServer("product", kp) : { ok: true }
+      const resL = kl ? await validateOnServer("policy", kl) : { ok: true }
+      if (!(resP as any).ok || !(resL as any).ok) {
+        setVp((resP as any).ok ? { ok:true, name: (resP as any).data?.name } : { ok:false, message: (resP as any).message })
+        setVl((resL as any).ok ? { ok:true, name: (resL as any).data?.name } : { ok:false, message: (resL as any).message })
+        return
+      }
+    }
+    const newMeta = {
+      ...currentMeta,
+      keygen_product: kp || undefined,
+      keygen_policy: kl || undefined,
+    }
+    await patchVariantMetadata(data.id, newMeta)
+    window.location.reload()
+  }
+
+  if (!data?.id) return <></>
+
+  return (
+    <Container className="divide-y p-0">
+      <div className="flex items-center justify-between px-6 py-4">
+        <Heading level="h2">Keygen (keygen.sh) – Variante</Heading>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2">
+        <div>
+          <Label>Keygen Product ID (keygen_product)</Label>
+          <Input placeholder="prod_XXXX" value={kp} onChange={(e) => setKp(e.target.value)} />
+          {vp?.ok && kp && <Text className="mt-1">✅ Gefunden: {vp.name ?? "OK"}</Text>}
+          {vp?.ok === false && <Text className="mt-1 text-ui-fg-error">❌ {vp.message}</Text>}
+          {recentProducts.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {recentProducts.map((id) => (
+                <Badge key={id} onClick={() => setKp(id)} variant="secondary">{id}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <Label>Keygen Policy ID (keygen_policy)</Label>
+          <Input placeholder="pol_XXXX" value={kl} onChange={(e) => setKl(e.target.value)} />
+          {vl?.ok && kl && <Text className="mt-1">✅ Gefunden: {vl.name ?? "OK"}</Text>}
+          {vl?.ok === false && <Text className="mt-1 text-ui-fg-error">❌ {vl.message}</Text>}
+          {recentPolicies.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {recentPolicies.map((id) => (
+                <Badge key={id} onClick={() => setKl(id)} variant="secondary">{id}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="col-span-1 md:col-span-2 flex items-center gap-3">
+          <Switch checked={autoValidate} onCheckedChange={setAutoValidate} />
+          <Text>Automatisch validieren vor dem Speichern</Text>
+          <Button variant="secondary" onClick={handleValidate}>Nur validieren</Button>
+          <div className="flex-1" />
+          <Button disabled={!canSave} onClick={handleSave}>Speichern</Button>
+        </div>
+      </div>
+    </Container>
+  )
+}
+
+export const config = defineWidgetConfig({
+  zone: "product.variant.details.after",
+})
+
+export default KeygenVariantWidget

@@ -1,0 +1,47 @@
+{
+  "name": "medusa-plugin-keygen",
+  "version": "0.1.0",
+  "description": "Medusa v2 plugin to issue licenses via keygen.sh on order placement. Includes Admin widgets and server routes.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "medusa",
+    "medusa-v2",
+    "medusa-plugin",
+    "keygen",
+    "licensing"
+  ],
+  "peerDependencies": {
+    "@medusajs/framework": "^2.8.0",
+    "@medusajs/medusa": "^2.8.0"
+  },
+  "devDependencies": {
+    "@medusajs/framework": "^2.8.0",
+    "@medusajs/medusa": "^2.8.0",
+    "@medusajs/cli": "^2.8.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.11.5"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    "./.medusa/server/src/modules/*": "./.medusa/server/src/modules/*/index.js",
+    "./*": "./.medusa/server/src/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_ORG/medusa-plugin-keygen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_ORG/medusa-plugin-keygen/issues"
+  },
+  "homepage": "https://github.com/YOUR_ORG/medusa-plugin-keygen#readme",
+  "engines": {
+    "node": ">=18"
+  }
+}
