@@ -5,7 +5,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const account = process.env.KEYGEN_ACCOUNT
   const token = process.env.KEYGEN_TOKEN
   if (!account || !token) {
-    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN fehlt" })
+    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
   const productId = (req.query?.productId as string) || ""
 
@@ -42,7 +42,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   const account = process.env.KEYGEN_ACCOUNT
   const token = process.env.KEYGEN_TOKEN
   if (!account || !token) {
-    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN fehlt" })
+    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
 
   const { productId, name, maxMachines, floating, duration, entitlementIds } = (req.body ?? {}) as {
@@ -55,7 +55,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   }
 
   if (!productId || !name) {
-    return res.status(400).json({ message: "productId und name sind Pflichtfelder" })
+    return res.status(400).json({ message: "productId and name are required fields" })
   }
 
   const payload: any = {

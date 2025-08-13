@@ -5,7 +5,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   const account = process.env.KEYGEN_ACCOUNT
   const token = process.env.KEYGEN_TOKEN
   if (!account || !token) {
-    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN fehlt" })
+    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
 
   const { sourcePolicyId, targetProductId, overrides } = (req.body ?? {}) as {
@@ -21,7 +21,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   }
 
   if (!sourcePolicyId || !targetProductId) {
-    return res.status(400).json({ message: "sourcePolicyId und targetProductId sind Pflichtfelder" })
+    return res.status(400).json({ message: "sourcePolicyId and targetProductId are required fields" })
   }
 
   // 1) Read source policy

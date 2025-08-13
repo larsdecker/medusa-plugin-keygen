@@ -7,10 +7,10 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   const token = process.env.KEYGEN_TOKEN
 
   if (!account || !token) {
-    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN fehlt" })
+    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
   if (!id || (type !== "product" && type !== "policy")) {
-    return res.status(400).json({ message: "Ungültiger Request" })
+    return res.status(400).json({ message: "Invalid request" })
   }
 
   const url =
