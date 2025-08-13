@@ -1,5 +1,5 @@
 import type { SubscriberArgs } from "@medusajs/medusa"
-import type { KeygenPluginOptions } from "../types"
+import KeygenService from "../modules/keygen/service"
 
 export default async function orderCanceledSubscriber({
   container,
@@ -8,17 +8,7 @@ export default async function orderCanceledSubscriber({
   if (event.name !== "order.canceled") return
 
   const logger = container.resolve("logger")
-  const config = container.resolve<any>("configModule")
-  const pluginCfg = (config?.plugins || []).find(
-    (p: any) => typeof p?.resolve === "string" && p.resolve.includes("medusa-plugin-keygen"),
-  )
-  const options: KeygenPluginOptions = pluginCfg?.options || {}
-
-  const host = options.host || process.env.KEYGEN_HOST || "https://api.keygen.sh"
-  const account = process.env.KEYGEN_ACCOUNT || ""
-  const token = process.env.KEYGEN_TOKEN || ""
-  const version = process.env.KEYGEN_VERSION || "1.8"
-  const timeout = options.timeoutMs ?? 10000
+  const keygen = container.resolve<KeygenService>(KeygenService.registrationName)
 
   try {
     const query = container.resolve("query")
@@ -31,29 +21,7 @@ export default async function orderCanceledSubscriber({
     for (const lic of licenses ?? []) {
       if (!lic?.keygen_license_id) continue
 
-      const controller = new AbortController()
-      const id = setTimeout(() => controller.abort(), timeout)
-
-      const res = await fetch(
-        `${host}/v1/accounts/${account}/licenses/${lic.keygen_license_id}/actions/suspend`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "Keygen-Version": version,
-          },
-          signal: controller.signal,
-        },
-      ).finally(() => clearTimeout(id))
-
-      if (!res.ok) {
-        const errText = await res.text().catch(() => "")
-        throw new Error(
-          `[keygen] suspend license failed: ${res.status} ${res.statusText} ${errText}`,
-        )
-      }
+      await keygen.suspendLicense(lic.keygen_license_id)
 
       await query.graph({
         entity: "keygen_license",
