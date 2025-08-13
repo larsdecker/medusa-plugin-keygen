@@ -1,10 +1,8 @@
 
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { ContainerRegistrationKeys } from "@medusajs/framework"
-
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const { order_id } = req.params as { order_id: string }
-  const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
+  const query = req.scope.resolve("query")
 
   const { data } = await query.graph({
     entity: "keygen_license",
