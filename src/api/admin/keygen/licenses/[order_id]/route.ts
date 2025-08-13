@@ -32,6 +32,10 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     orderItemId?: string
   }
 
+  if (!policyId && !productId) {
+    return res.status(400).json({ message: "policyId or productId required" })
+  }
+
   const { record } = await keygen.createLicense({
     orderId: order_id,
     orderItemId,
