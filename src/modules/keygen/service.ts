@@ -61,9 +61,9 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
     const controller = new AbortController()
     const id = setTimeout(() => controller.abort(), this.timeout)
 
-    const res = await fetch(
-      `${this.host}/v1/accounts/${this.account}/licenses`,
-      {
+    let res: Response
+    try {
+      res = await fetch(`${this.host}/v1/accounts/${this.account}/licenses`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -73,8 +73,14 @@ export default class KeygenService extends MedusaService({ KeygenLicense }) {
         },
         body: JSON.stringify(body),
         signal: controller.signal,
-      }
-    ).finally(() => clearTimeout(id))
+      })
+    } catch (e) {
+      throw new Error(
+        `[keygen] create license request failed: ${e instanceof Error ? e.message : e}`
+      )
+    } finally {
+      clearTimeout(id)
+    }
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "")
