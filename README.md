@@ -1,19 +1,19 @@
 
 # medusa-plugin-keygen
 
-Medusa v2 Plugin, das beim Platzieren einer Bestellung **Lizenzen via keygen.sh** erzeugt.
-Inklusive **Admin-Widgets** (Produkt & Variante) und **Admin-Serverrouten** (Validierung, Policy-Management).
+Medusa v2 plugin that creates **licenses via keygen.sh** when an order is placed.
+Includes **admin widgets** (product & variant) and **admin server routes** (validation, policy management).
 
 ## Features
-- **Subscriber**: reagiert auf `order.placed`, erzeugt pro Line-Item eine Lizenz
-- **Data Model**: `keygen_license` Tabelle (order_id, license_id, key, status, etc.)
-- **Admin-Widgets**:
-  - Produkt: `keygen_product` / `keygen_policy` setzen, Policies anzeigen/erstellen, klonen, Entitlements wählen
-  - Variante: Metadaten pro Variante setzen (Override)
-- **Admin-API**:
+- **Subscriber**: listens for `order.placed` and creates a license for each line item
+- **Data Model**: `keygen_license` table (order_id, license_id, key, status, etc.)
+- **Admin Widgets**:
+  - Product: set `keygen_product` / `keygen_policy`, view/create/clone policies, select entitlements
+  - Variant: set metadata per variant (override)
+- **Admin API**:
   - `POST /admin/keygen/validate`
   - `GET /admin/keygen/policies?productId=`
-  - `POST /admin/keygen/policies` (inkl. Entitlements)
+  - `POST /admin/keygen/policies` (including entitlements)
   - `POST /admin/keygen/policies/clone`
   - `GET /admin/keygen/entitlements`
 
@@ -22,7 +22,7 @@ Inklusive **Admin-Widgets** (Produkt & Variante) und **Admin-Serverrouten** (Val
 npm i medusa-plugin-keygen
 ```
 
-In `medusa-config.ts` registrieren:
+Register in `medusa-config.ts`:
 ```ts
 import { defineConfig } from "@medusajs/medusa"
 
@@ -42,21 +42,21 @@ export default defineConfig({
 })
 ```
 
-ENV in deiner App setzen:
+Set the environment variables in your app:
 ```
 KEYGEN_ACCOUNT=your-account-or-slug
 KEYGEN_TOKEN=your-api-token
 ```
 
-Migrationen:
+Migrations:
 ```bash
-npx medusa plugin:db:generate  # im Plugin (optional)
-npx medusa db:migrate         # in deiner App (führt Plugin-Migrationen aus)
+npx medusa plugin:db:generate  # inside the plugin (optional)
+npx medusa db:migrate         # in your app (runs plugin migrations)
 ```
 
 ## Admin
-- Produktdetailseite: IDs setzen/validieren, Policy erstellen/klonen, Entitlements verknüpfen
-- Variantenansicht: Metadaten pro Variante setzen
+- Product detail page: set/validate IDs, create/clone policies, attach entitlements
+- Variant view: set metadata per variant
 
 ## Tests
 ```bash
@@ -65,10 +65,10 @@ npm run build
 npm test
 ```
 
-## Verwendung aus GitHub
-- Repo erstellen (z. B. `YOUR_ORG/medusa-plugin-keygen`), Dateien pushen
-- Version bumpen (SemVer), Tag setzen (z. B. `v0.1.0`)
-- Optional: GitHub Release / npm publish
+## Use from GitHub
+- Create a repo (e.g., `YOUR_ORG/medusa-plugin-keygen`) and push the files
+- Bump the version (SemVer), tag it (e.g., `v0.1.0`)
+- Optional: GitHub release / npm publish
 
-## Lizenz
+## License
 MIT

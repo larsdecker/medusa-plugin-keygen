@@ -9,7 +9,7 @@ const LS_RECENT_POLICIES = "keygen_recent_policies"
 const loadRecent = (k: string): string[] => { try { return JSON.parse(localStorage.getItem(k) || "[]") } catch { return [] } }
 
 async function validateOnServer(type: "product" | "policy", id: string) {
-  if (!id) return { ok: false, message: "ID fehlt" }
+  if (!id) return { ok: false, message: "ID missing" }
   const res = await fetch(`/admin/keygen/validate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -18,7 +18,7 @@ async function validateOnServer(type: "product" | "policy", id: string) {
   })
   if (!res.ok) {
     const t = await res.text().catch(() => "")
-    return { ok: false, message: `Fehler ${res.status}: ${t}` }
+    return { ok: false, message: `Error ${res.status}: ${t}` }
   }
   const json = await res.json()
   return { ok: true, data: json }
@@ -87,14 +87,14 @@ const KeygenVariantWidget = ({ data }: DetailWidgetProps<AdminProductVariant>) =
   return (
     <Container className="divide-y p-0">
       <div className="flex items-center justify-between px-6 py-4">
-        <Heading level="h2">Keygen (keygen.sh) – Variante</Heading>
+        <Heading level="h2">Keygen (keygen.sh) – Variant</Heading>
       </div>
 
       <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2">
         <div>
           <Label>Keygen Product ID (keygen_product)</Label>
           <Input placeholder="prod_XXXX" value={kp} onChange={(e) => setKp(e.target.value)} />
-          {vp?.ok && kp && <Text className="mt-1">✅ Gefunden: {vp.name ?? "OK"}</Text>}
+          {vp?.ok && kp && <Text className="mt-1">✅ Found: {vp.name ?? "OK"}</Text>}
           {vp?.ok === false && <Text className="mt-1 text-ui-fg-error">❌ {vp.message}</Text>}
           {recentProducts.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -108,7 +108,7 @@ const KeygenVariantWidget = ({ data }: DetailWidgetProps<AdminProductVariant>) =
         <div>
           <Label>Keygen Policy ID (keygen_policy)</Label>
           <Input placeholder="pol_XXXX" value={kl} onChange={(e) => setKl(e.target.value)} />
-          {vl?.ok && kl && <Text className="mt-1">✅ Gefunden: {vl.name ?? "OK"}</Text>}
+          {vl?.ok && kl && <Text className="mt-1">✅ Found: {vl.name ?? "OK"}</Text>}
           {vl?.ok === false && <Text className="mt-1 text-ui-fg-error">❌ {vl.message}</Text>}
           {recentPolicies.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -121,10 +121,10 @@ const KeygenVariantWidget = ({ data }: DetailWidgetProps<AdminProductVariant>) =
 
         <div className="col-span-1 md:col-span-2 flex items-center gap-3">
           <Switch checked={autoValidate} onCheckedChange={setAutoValidate} />
-          <Text>Automatisch validieren vor dem Speichern</Text>
-          <Button variant="secondary" onClick={handleValidate}>Nur validieren</Button>
+          <Text>Automatically validate before saving</Text>
+          <Button variant="secondary" onClick={handleValidate}>Validate only</Button>
           <div className="flex-1" />
-          <Button disabled={!canSave} onClick={handleSave}>Speichern</Button>
+          <Button disabled={!canSave} onClick={handleSave}>Save</Button>
         </div>
       </div>
     </Container>

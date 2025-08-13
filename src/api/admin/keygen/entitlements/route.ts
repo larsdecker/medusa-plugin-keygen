@@ -5,7 +5,7 @@ export const GET = async (_req: MedusaRequest, res: MedusaResponse) => {
   const account = process.env.KEYGEN_ACCOUNT
   const token = process.env.KEYGEN_TOKEN
   if (!account || !token) {
-    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN fehlt" })
+    return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
 
   const r = await fetch(`https://api.keygen.sh/v1/accounts/${account}/entitlements`, {
