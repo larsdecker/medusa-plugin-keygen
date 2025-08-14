@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import type { KeygenPluginOptions } from "../../types"
+import { env } from "../../config/env"
 
 type CreateInput = {
   orderId: string
@@ -25,15 +26,12 @@ export default class KeygenService {
     options: KeygenPluginOptions = {}
   ) {
     this.options = options
-    this.account = process.env.KEYGEN_ACCOUNT || ""
-    this.token = process.env.KEYGEN_TOKEN || ""
+    this.account = env.KEYGEN_ACCOUNT
+    this.token = env.KEYGEN_TOKEN
     this.timeout = options.timeoutMs ?? 10000
     this.host =
-      options.host || process.env.KEYGEN_HOST || "https://api.keygen.sh"
-    this.version = process.env.KEYGEN_VERSION || "1.8"
-    if (!this.account || !this.token) {
-      console.warn("[keygen] Missing KEYGEN_ACCOUNT or KEYGEN_TOKEN")
-    }
+      options.host || env.KEYGEN_HOST
+    this.version = env.KEYGEN_VERSION
   }
 
   async createLicense(input: CreateInput) {

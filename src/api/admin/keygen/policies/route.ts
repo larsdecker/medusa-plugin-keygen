@@ -1,16 +1,17 @@
 
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { env } from "../../../../config/env"
 
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
-  const account = process.env.KEYGEN_ACCOUNT
-  const token = process.env.KEYGEN_TOKEN
+  const account = env.KEYGEN_ACCOUNT
+  const token = env.KEYGEN_TOKEN
   if (!account || !token) {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
-  const version = process.env.KEYGEN_VERSION || "1.8"
+  const version = env.KEYGEN_VERSION
   const productId = (req.query?.productId as string) || ""
 
-  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
+  const host = env.KEYGEN_HOST
   let url = `${host}/v1/accounts/${account}/policies`
   if (productId) {
     const u = new URL(url)
@@ -42,12 +43,12 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
 }
 
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
-  const account = process.env.KEYGEN_ACCOUNT
-  const token = process.env.KEYGEN_TOKEN
+  const account = env.KEYGEN_ACCOUNT
+  const token = env.KEYGEN_TOKEN
   if (!account || !token) {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
-  const version = process.env.KEYGEN_VERSION || "1.8"
+  const version = env.KEYGEN_VERSION
 
   const { productId, name, maxMachines, floating, duration, entitlementIds } = (req.body ?? {}) as {
     productId: string
@@ -77,7 +78,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     }
   }
 
-  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
+  const host = env.KEYGEN_HOST
   const r = await fetch(`${host}/v1/accounts/${account}/policies`, {
     method: "POST",
     headers: {

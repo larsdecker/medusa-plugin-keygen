@@ -1,13 +1,14 @@
 
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { env } from "../../../../../config/env"
 
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
-  const account = process.env.KEYGEN_ACCOUNT
-  const token = process.env.KEYGEN_TOKEN
+  const account = env.KEYGEN_ACCOUNT
+  const token = env.KEYGEN_TOKEN
   if (!account || !token) {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
-  const version = process.env.KEYGEN_VERSION || "1.8"
+  const version = env.KEYGEN_VERSION
 
   const { sourcePolicyId, targetProductId, overrides } = (req.body ?? {}) as {
     sourcePolicyId: string
@@ -26,7 +27,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   }
 
   // 1) Read source policy
-  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
+  const host = env.KEYGEN_HOST
   const src = await fetch(`${host}/v1/accounts/${account}/policies/${sourcePolicyId}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "Keygen-Version": version }
   })
