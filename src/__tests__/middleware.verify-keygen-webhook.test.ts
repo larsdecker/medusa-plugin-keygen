@@ -43,4 +43,18 @@ describe("verifyKeygenWebhook", () => {
     expect(res.json).toHaveBeenCalledWith({ message: "Invalid signature" })
     expect(next).not.toHaveBeenCalled()
   })
+
+  it("fails when raw body is missing", () => {
+    const sig = crypto.createHmac("sha256", "test_secret").update("payload").digest("hex")
+
+    const req: any = { headers: { "x-signature": sig } }
+    const res = mockRes()
+    const next = vi.fn()
+
+    verifyKeygenWebhook(req, res, next)
+
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(res.json).toHaveBeenCalledWith({ message: "Missing raw body" })
+    expect(next).not.toHaveBeenCalled()
+  })
 })
