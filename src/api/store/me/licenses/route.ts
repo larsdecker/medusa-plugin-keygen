@@ -16,7 +16,11 @@ type License = {
 
 export const GET = async (
   req: MedusaRequest,
-  res: MedusaResponse<{ licenses: License[] } | { message: string }>
+  res: MedusaResponse<
+    | { licenses: License[] }
+    | { licenses: License[]; count: number; limit: number; offset: number }
+    | { message: string }
+  >
 ) => {
   const { user, auth } = req as unknown as {
     user?: AuthUser
@@ -30,19 +34,42 @@ export const GET = async (
   }
 
   const query = req.scope.resolve("query") as {
-    graph<T>(cfg: any): Promise<{ data: T[] | null }>
+    graph<T>(cfg: any): Promise<{ data: T[] | null; metadata?: { count?: number } }>
   }
 
-  const { data } = await query.graph<LicenseRow>({
+  const { limit: limitParam, offset: offsetParam, q, order } = (req.query ?? {}) as {
+    limit?: string
+    offset?: string
+    q?: string
+    order?: string
+  }
+
+  const shouldPaginate =
+    typeof limitParam !== "undefined" || typeof offsetParam !== "undefined"
+
+  const take = shouldPaginate ? parseInt(limitParam ?? "20", 10) : undefined
+  const skip = shouldPaginate ? parseInt(offsetParam ?? "0", 10) : undefined
+
+  let orderBy: Record<string, "asc" | "desc"> | undefined
+  if (order) {
+    const [field, direction] = order.split(":")
+    orderBy = { [field]: (direction as "asc" | "desc") ?? "asc" }
+  }
+
+  const cfg: any = {
     entity: "keygen_license",
-    filters: { customer_id: customerId },
+    filters: { customer_id: customerId, ...(q ? { q } : {}) },
     fields: [
       "keygen_license_id",
       "license_key",
       "status",
       "keygen_product_id",
     ],
-  })
+    ...(shouldPaginate ? { pagination: { take, skip } } : {}),
+    ...(orderBy ? { orderBy } : {}),
+  }
+
+  const { data, metadata } = await query.graph<LicenseRow>(cfg)
 
   const licenses: License[] = (data ?? []).map((l) => ({
     id: l.keygen_license_id,
@@ -52,6 +79,11 @@ export const GET = async (
       ? { product: { id: l.keygen_product_id } }
       : {}),
   }))
+
+  if (shouldPaginate) {
+    const count = metadata?.count ?? (data?.length ?? 0) + (skip ?? 0)
+    return res.json({ licenses, count, limit: take!, offset: skip! })
+  }
 
   return res.json({ licenses })
 }

@@ -45,6 +45,49 @@ describe("Store license routes", () => {
     })
   })
 
+  it("supports pagination", async () => {
+    const data = [
+      {
+        keygen_license_id: "lic_1",
+        license_key: "AAAA-BBBB",
+        status: "created",
+        keygen_product_id: "prod_1",
+      },
+    ]
+    const query = {
+      graph: vi.fn().mockResolvedValue({ data, metadata: { count: 30 } }),
+    }
+    const req = {
+      scope: { resolve: (k: string) => (k === "query" ? query : undefined) },
+      user: { id: "cust_1" },
+      query: { limit: "20", offset: "10", q: "prod", order: "created_at:desc" },
+    } as unknown as MedusaRequest
+    const res = mockRes()
+
+    await LIST(req, res)
+
+    expect(query.graph).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: { customer_id: "cust_1", q: "prod" },
+        pagination: { take: 20, skip: 10 },
+        orderBy: { created_at: "desc" },
+      })
+    )
+    expect(res.json).toHaveBeenCalledWith({
+      licenses: [
+        {
+          id: "lic_1",
+          key: "AAAA-BBBB",
+          status: "created",
+          product: { id: "prod_1" },
+        },
+      ],
+      count: 30,
+      limit: 20,
+      offset: 10,
+    })
+  })
+
   it("creates download link", async () => {
     const query = {
       graph: vi.fn().mockResolvedValue({

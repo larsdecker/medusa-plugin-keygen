@@ -5,9 +5,28 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const query = req.scope.resolve("query")
   const keygen = req.scope.resolve<any>("keygenService")
 
-  const { data } = await query.graph({
+  const { limit: limitParam, offset: offsetParam, q, order } = (req.query ?? {}) as {
+    limit?: string
+    offset?: string
+    q?: string
+    order?: string
+  }
+
+  const shouldPaginate =
+    typeof limitParam !== "undefined" || typeof offsetParam !== "undefined"
+
+  const take = shouldPaginate ? parseInt(limitParam ?? "20", 10) : undefined
+  const skip = shouldPaginate ? parseInt(offsetParam ?? "0", 10) : undefined
+
+  let orderBy: Record<string, "asc" | "desc"> | undefined
+  if (order) {
+    const [field, direction] = order.split(":")
+    orderBy = { [field]: (direction as "asc" | "desc") ?? "asc" }
+  }
+
+  const { data, metadata } = await query.graph({
     entity: "keygen_license",
-    filters: { customer_id },
+    filters: { customer_id, ...(q ? { q } : {}) },
     fields: [
       "id",
       "license_key",
@@ -17,6 +36,8 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       "keygen_product_id",
       "created_at",
     ],
+    ...(shouldPaginate ? { pagination: { take, skip } } : {}),
+    ...(orderBy ? { orderBy } : {}),
   })
 
   const licenses = await Promise.all(
@@ -48,6 +69,11 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       }
     })
   )
+
+  if (shouldPaginate) {
+    const count = metadata?.count ?? (data?.length ?? 0) + (skip ?? 0)
+    return res.json({ licenses, count, limit: take!, offset: skip! })
+  }
 
   res.json({ licenses })
 }
