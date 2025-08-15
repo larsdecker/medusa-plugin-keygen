@@ -81,7 +81,6 @@ describe("KeygenService.createLicense", () => {
     it("uses custom host from env", async () => {
       process.env.KEYGEN_HOST = "https://custom.example.com"
       const svc = new (KeygenService as any)(container, {})
-      svc.createKeygenLicenses = vi.fn().mockResolvedValue({ data: [] })
 
       await svc.createLicense({ orderId: "order_1" })
 
@@ -100,5 +99,50 @@ describe("KeygenService.createLicense", () => {
       await expect(svc.createLicense({ orderId: "order_1" })).rejects.toThrow(
         "[keygen] create license request failed: Network down"
       )
+    })
+
+    it("retries on temporary server error", async () => {
+      vi.useFakeTimers()
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "err",
+          text: async () => "",
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 502,
+          statusText: "err",
+          text: async () => "",
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            data: { id: "lic_retry", attributes: { key: "FFFF-GGGG-HHHH" } },
+          }),
+        })
+
+      query.graph = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: "db_retry",
+            order_id: "order_1",
+            license_key: "FFFF-GGGG-HHHH",
+            keygen_license_id: "lic_retry",
+          },
+        ],
+      })
+
+      const svc = new (KeygenService as any)(container, {})
+
+      const promise = svc.createLicense({ orderId: "order_1" })
+      await vi.runAllTimersAsync()
+      const result = await promise
+
+      expect(global.fetch).toHaveBeenCalledTimes(3)
+      expect(result.raw.data.id).toBe("lic_retry")
+      vi.useRealTimers()
     })
   })

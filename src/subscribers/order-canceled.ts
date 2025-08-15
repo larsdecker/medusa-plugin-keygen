@@ -11,7 +11,7 @@ export default async function orderCanceledSubscriber({
   const keygen = container.resolve<KeygenService>(KeygenService.registrationName)
 
   try {
-    const query = container.resolve("query")
+    const query = container.resolve<any>("query")
     const { data: licenses } = await query.graph({
       entity: "keygen_license",
       filters: { order_id: event.data.id },
