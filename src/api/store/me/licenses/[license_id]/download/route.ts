@@ -1,7 +1,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import KeygenService, {
   DownloadLink,
-} from "../../../../../modules/keygen/service"
+} from "../../../../../../modules/keygen/service"
 
 type AuthUser = { id?: string; customer_id?: string }
 interface DownloadBody {
