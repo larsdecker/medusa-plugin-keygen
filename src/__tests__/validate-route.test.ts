@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { POST } from "../api/admin/keygen/validate/route"
+let POST: any
 
 describe("validate route", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.KEYGEN_ACCOUNT = "acc"
     process.env.KEYGEN_TOKEN = "tok"
     process.env.KEYGEN_VERSION = "1.8"
+    vi.resetModules()
+    POST = (await import("../api/admin/keygen/validate/route")).POST
   })
 
   it("returns generic message on upstream error", async () => {
