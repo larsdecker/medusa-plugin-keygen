@@ -219,6 +219,67 @@ export default class KeygenService {
     return (await res.json().catch(() => ({}))) as any
   }
 
+  async getLicenseWithMachines(licenseId: string) {
+    let res = await this.fetchWithRetry(
+      `${this.host}/v1/accounts/${this.account}/licenses/${licenseId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: "application/json",
+          "Keygen-Version": this.version,
+        },
+      }
+    )
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "")
+      throw new Error(
+        `[keygen] get license failed: ${res.status} ${res.statusText} ${errText}`
+      )
+    }
+
+    const licensePayload = (await res.json().catch(() => ({}))) as any
+    const max =
+      licensePayload?.data?.attributes?.maxMachines ??
+      licensePayload?.maxMachines ??
+      0
+    const status =
+      licensePayload?.data?.attributes?.status ??
+      licensePayload?.data?.attributes?.state ??
+      null
+    const key = licensePayload?.data?.attributes?.key ?? null
+
+    res = await this.fetchWithRetry(
+      `${this.host}/v1/accounts/${this.account}/machines?filter[license]=${licenseId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: "application/json",
+          "Keygen-Version": this.version,
+        },
+      }
+    )
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "")
+      throw new Error(
+        `[keygen] list machines failed: ${res.status} ${res.statusText} ${errText}`
+      )
+    }
+
+    const machinesPayload = (await res.json().catch(() => ({}))) as any
+    const machines = Array.isArray(machinesPayload?.data)
+      ? machinesPayload.data.map((m: any) => ({
+          id: m?.id,
+          name: m?.attributes?.name ?? null,
+          fingerprint: m?.attributes?.fingerprint ?? null,
+          platform: m?.attributes?.platform ?? null,
+        }))
+      : []
+
+    return { id: licenseId, key, status, maxMachines: max, machines }
+  }
+
   async activateMachine(input: {
     licenseId: string
     fingerprint: string
