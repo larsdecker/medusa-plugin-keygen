@@ -448,17 +448,16 @@ export default class KeygenService {
       }
     }
 
-    const body: Record<string, unknown> = {
+    const body = {
       data: {
         type: "download-links",
         relationships: {
           license: { data: { type: "licenses", id: input.licenseId } },
         },
+        ...(input.filename
+          ? { attributes: { filename: input.filename } }
+          : {}),
       },
-    }
-
-    if (input.filename) {
-      body.data.attributes = { filename: input.filename }
     }
 
     let res: Response
