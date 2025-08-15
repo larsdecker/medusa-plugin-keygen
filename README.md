@@ -22,6 +22,13 @@ Includes **admin widgets** (product & variant) and **admin server routes** (vali
   - `GET/POST /admin/keygen/licenses/:order_id`
 - Keygen requests include automatic retry logic (up to three attempts on 5xx errors)
 
+- **Store API**:
+  - `GET /store/me/licenses` – list licenses for the authenticated customer
+  - `GET /store/me/licenses/:license_id` – retrieve details for a specific license
+  - `POST /store/me/licenses/:license_id/download` – create a temporary download link for a Keygen asset
+- **Download link caching**: the Keygen service caches generated download links until they expire to reduce redundant requests
+- **Strict TypeScript types**: license APIs and the Keygen service expose tightened TypeScript interfaces so request and response shapes are fully typed
+
 The licenses endpoint lets you fetch existing licenses for an order or manually
 generate them if needed.
 
