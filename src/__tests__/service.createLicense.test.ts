@@ -151,4 +151,3 @@ describe("KeygenService.createLicense", () => {
       vi.useRealTimers()
     })
   })
-})

@@ -20,9 +20,9 @@ vi.mock("@medusajs/framework/utils", () => {
   return { model: { define: vi.fn(() => ({})), text: chain, id: chain, enum: chain } }
 })
 
-import orderRefundedSubscriber from "../subscribers/order-refunded"
 import { ContainerRegistrationKeys } from "@medusajs/framework"
-import KeygenService from "../modules/keygen/service"
+let KeygenService: any
+let orderRefundedSubscriber: any
 
 const buildContainer = () => {
   const logger = { info: vi.fn(), error: vi.fn() }
@@ -50,10 +50,13 @@ const buildContainer = () => {
 }
 
 describe("orderRefundedSubscriber", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules()
     process.env.KEYGEN_ACCOUNT = "acct_123"
     process.env.KEYGEN_TOKEN = "tok_123"
     delete process.env.KEYGEN_HOST
+    KeygenService = (await import("../modules/keygen/service")).default
+    orderRefundedSubscriber = (await import("../subscribers/order-refunded")).default
   })
 
   it("revokes licenses for refunded order", async () => {

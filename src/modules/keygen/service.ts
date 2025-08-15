@@ -12,6 +12,16 @@ type CreateInput = {
   metadata?: Record<string, unknown>
 }
 
+export class SeatsExhaustedError extends Error {
+  code = "SEATS_EXHAUSTED"
+  seats: { max: number; used: number }
+
+  constructor(max: number, used: number) {
+    super("No free seats available")
+    this.seats = { max, used }
+  }
+}
+
 export default class KeygenService {
   static readonly registrationName = "keygenService"
   private account: string
@@ -203,6 +213,135 @@ export default class KeygenService {
       const errText = await res.text().catch(() => "")
       throw new Error(
         `[keygen] revoke license failed: ${res.status} ${res.statusText} ${errText}`
+      )
+    }
+
+    return (await res.json().catch(() => ({}))) as any
+  }
+
+  async activateMachine(input: {
+    licenseId: string
+    fingerprint: string
+    platform?: string
+    name?: string
+    meta?: Record<string, unknown>
+  }) {
+    let res = await this.fetchWithRetry(
+      `${this.host}/v1/accounts/${this.account}/licenses/${input.licenseId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: "application/json",
+          "Keygen-Version": this.version,
+        },
+      }
+    )
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "")
+      throw new Error(
+        `[keygen] get license failed: ${res.status} ${res.statusText} ${errText}`
+      )
+    }
+
+    const licensePayload = (await res.json().catch(() => ({}))) as any
+    const max =
+      licensePayload?.data?.attributes?.maxMachines ??
+      licensePayload?.maxMachines ??
+      0
+
+    res = await this.fetchWithRetry(
+      `${this.host}/v1/accounts/${this.account}/machines?filter[license]=${input.licenseId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: "application/json",
+          "Keygen-Version": this.version,
+        },
+      }
+    )
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "")
+      throw new Error(
+        `[keygen] list machines failed: ${res.status} ${res.statusText} ${errText}`
+      )
+    }
+
+    const machinesPayload = (await res.json().catch(() => ({}))) as any
+    const used = Array.isArray(machinesPayload?.data)
+      ? machinesPayload.data.length
+      : 0
+
+    if (max > 0 && used >= max) {
+      throw new SeatsExhaustedError(max, used)
+    }
+
+    const body = {
+      data: {
+        type: "machines",
+        attributes: {
+          fingerprint: input.fingerprint,
+          ...(input.platform ? { platform: input.platform } : {}),
+          ...(input.name ? { name: input.name } : {}),
+          ...(input.meta ? { meta: input.meta } : {}),
+        },
+        relationships: {
+          license: { data: { type: "licenses", id: input.licenseId } },
+        },
+      },
+    }
+
+    res = await this.fetchWithRetry(
+      `${this.host}/v1/accounts/${this.account}/machines`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "Keygen-Version": this.version,
+          "Idempotency-Key": `machine_${input.licenseId}_${input.fingerprint}`,
+        },
+        body: JSON.stringify(body),
+      }
+    )
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "")
+      if (res.status === 409 || res.status === 422) {
+        throw new SeatsExhaustedError(max, used)
+      }
+      throw new Error(
+        `[keygen] create machine failed: ${res.status} ${res.statusText} ${errText}`
+      )
+    }
+
+    const machinePayload = (await res.json().catch(() => ({}))) as any
+    return {
+      machineId: machinePayload?.data?.id,
+      seats: { max, used: used + 1 },
+      raw: machinePayload,
+    }
+  }
+
+  async deleteMachine(machineId: string) {
+    const res = await this.fetchWithRetry(
+      `${this.host}/v1/accounts/${this.account}/machines/${machineId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: "application/json",
+          "Keygen-Version": this.version,
+        },
+      }
+    )
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "")
+      throw new Error(
+        `[keygen] delete machine failed: ${res.status} ${res.statusText} ${errText}`
       )
     }
 
