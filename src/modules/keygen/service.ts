@@ -34,6 +34,39 @@ export default class KeygenService {
     this.version = env.KEYGEN_VERSION
   }
 
+  private async fetchWithRetry(
+    url: string,
+    init: RequestInit,
+    maxRetries = 3
+  ): Promise<Response> {
+    let attempt = 0
+    let delay = 100
+    while (true) {
+      const controller = new AbortController()
+      const id = setTimeout(() => controller.abort(), this.timeout)
+      try {
+        const res = await fetch(url, { ...init, signal: controller.signal })
+        if (res.status >= 500 && res.status < 600 && attempt < maxRetries) {
+          attempt++
+          await new Promise((r) => setTimeout(r, delay))
+          delay *= 2
+          continue
+        }
+        return res
+      } catch (e) {
+        if (attempt < maxRetries) {
+          attempt++
+          await new Promise((r) => setTimeout(r, delay))
+          delay *= 2
+          continue
+        }
+        throw e
+      } finally {
+        clearTimeout(id)
+      }
+    }
+  }
+
   async createLicense(input: CreateInput) {
     const body = {
       data: {
@@ -52,28 +85,25 @@ export default class KeygenService {
       },
     }
 
-    const controller = new AbortController()
-    const id = setTimeout(() => controller.abort(), this.timeout)
-
     let res: Response
     try {
-      res = await fetch(`${this.host}/v1/accounts/${this.account}/licenses`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "Keygen-Version": this.version,
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      })
+      res = await this.fetchWithRetry(
+        `${this.host}/v1/accounts/${this.account}/licenses`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "Keygen-Version": this.version,
+          },
+          body: JSON.stringify(body),
+        }
+      )
     } catch (e) {
       throw new Error(
         `[keygen] create license request failed: ${e instanceof Error ? e.message : e}`
       )
-    } finally {
-      clearTimeout(id)
     }
 
     if (!res.ok) {
@@ -108,12 +138,9 @@ export default class KeygenService {
   }
 
   async suspendLicense(licenseId: string) {
-    const controller = new AbortController()
-    const id = setTimeout(() => controller.abort(), this.timeout)
-
     let res: Response
     try {
-      res = await fetch(
+      res = await this.fetchWithRetry(
         `${this.host}/v1/accounts/${this.account}/licenses/${licenseId}/actions/suspend`,
         {
           method: "POST",
@@ -123,7 +150,6 @@ export default class KeygenService {
             Accept: "application/json",
             "Keygen-Version": this.version,
           },
-          signal: controller.signal,
         }
       )
     } catch (e) {
@@ -132,8 +158,6 @@ export default class KeygenService {
           e instanceof Error ? e.message : e
         }`
       )
-    } finally {
-      clearTimeout(id)
     }
 
     if (!res.ok) {
