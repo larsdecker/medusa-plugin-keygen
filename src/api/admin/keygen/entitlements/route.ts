@@ -1,15 +1,16 @@
 
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { env } from "../../../../config/env"
 
 export const GET = async (_req: MedusaRequest, res: MedusaResponse) => {
-  const account = process.env.KEYGEN_ACCOUNT
-  const token = process.env.KEYGEN_TOKEN
-  const version = process.env.KEYGEN_VERSION || "1.8"
+  const account = env.KEYGEN_ACCOUNT
+  const token = env.KEYGEN_TOKEN
+  const version = env.KEYGEN_VERSION
   if (!account || !token) {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
   }
 
-  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
+  const host = env.KEYGEN_HOST
   const r = await fetch(`${host}/v1/accounts/${account}/entitlements`, {
     headers: {
       Authorization: `Bearer ${token}`,
