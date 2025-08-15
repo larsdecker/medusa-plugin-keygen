@@ -5,7 +5,14 @@ import orderPlacedSubscriber from "./subscribers/order-placed"
 import orderCanceledSubscriber from "./subscribers/order-canceled"
 import orderRefundedSubscriber from "./subscribers/order-refunded"
 
-export default async function keygenPlugin(_: LoaderOptions) {
+type Subscriber = (...args: unknown[]) => unknown
+
+export default async function keygenPlugin(
+  _: LoaderOptions
+): Promise<{
+  services: typeof KeygenService[]
+  subscribers: Subscriber[]
+}> {
   return {
     services: [KeygenService],
     subscribers: [

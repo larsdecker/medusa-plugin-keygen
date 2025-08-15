@@ -1,25 +1,46 @@
 
 import type { SubscriberArgs } from "@medusajs/medusa"
-import KeygenService from "../modules/keygen/service"
+import KeygenService, {
+  KeygenAuthError,
+  SeatsExhaustedError,
+} from "../modules/keygen/service"
 import type { KeygenPluginOptions } from "../types"
+
+interface OrderItem {
+  id: string
+  variant_id?: string
+  metadata?: Record<string, unknown>
+}
+
+interface Order {
+  id: string
+  customer_id?: string
+  items?: OrderItem[]
+}
+
+interface PluginConfig {
+  plugins?: { resolve?: string; options?: KeygenPluginOptions }[]
+}
 
 export default async function orderPlacedSubscriber({
   container,
   event,
-}: SubscriberArgs<any>) {
+}: SubscriberArgs<{ id: string }>) {
   if (event.name !== "order.placed") return
 
   const logger = container.resolve("logger")
-  const config = container.resolve<any>("configModule")
+  const config = container.resolve<PluginConfig>("configModule")
   const pluginCfg = (config?.plugins || []).find(
-    (p: any) => typeof p?.resolve === "string" && p.resolve.includes("medusa-plugin-keygen")
+    (p) => typeof p?.resolve === "string" && p.resolve.includes("medusa-plugin-keygen")
   )
   const options: KeygenPluginOptions = pluginCfg?.options || {}
 
   const keygen = container.resolve<KeygenService>(KeygenService.registrationName)
 
   try {
-    const query = container.resolve("query")
+    const query = container.resolve<{
+      graph: (args: unknown) => Promise<{ data?: Order[] }>
+    }>("query")
     const { data: orders } = await query.graph({
       entity: "order",
       filters: { id: event.data.id },
@@ -66,7 +87,15 @@ export default async function orderPlacedSubscriber({
         `[keygen] license created for order ${order.id} / item ${item.id}: ${record?.license_key}`
       )
     }
-  } catch (e: any) {
-    logger.error(`[keygen] failed on order.placed: ${e?.message}`)
+  } catch (e: unknown) {
+    if (e instanceof SeatsExhaustedError) {
+      logger.error(`[keygen] seats exhausted for order ${event.data.id}`)
+    } else if (e instanceof KeygenAuthError) {
+      logger.error(`[keygen] auth error on order.placed: ${e.message}`)
+    } else if (e instanceof Error) {
+      logger.error(`[keygen] failed on order.placed: ${e.message}`)
+    } else {
+      logger.error(`[keygen] failed on order.placed: ${String(e)}`)
+    }
   }
 }

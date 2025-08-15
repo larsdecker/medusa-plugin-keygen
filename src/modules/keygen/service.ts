@@ -22,6 +22,58 @@ export class SeatsExhaustedError extends Error {
   }
 }
 
+export class KeygenTimeoutError extends Error {
+  constructor(message = "Request timed out") {
+    super(message)
+    this.name = "KeygenTimeoutError"
+  }
+}
+
+export class KeygenAuthError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message)
+    this.name = "KeygenAuthError"
+  }
+}
+
+export class KeygenHttpError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message)
+    this.name = "KeygenHttpError"
+  }
+}
+
+interface LicenseAttributes {
+  key?: string
+  maxMachines?: number
+  status?: string | null
+  state?: string | null
+}
+
+interface LicenseResponse {
+  data?: { id?: string; attributes?: LicenseAttributes }
+}
+
+interface MachineAttributes {
+  name?: string | null
+  fingerprint?: string | null
+  platform?: string | null
+}
+
+interface MachineResponse {
+  data?: { id?: string; attributes?: MachineAttributes }
+}
+
+interface MachinesResponse {
+  data?: Array<{ id?: string; attributes?: MachineAttributes }>
+}
+
 export default class KeygenService {
   static readonly registrationName = "keygenService"
   private account: string
@@ -70,11 +122,26 @@ export default class KeygenService {
           delay *= 2
           continue
         }
+        if (e instanceof Error && e.name === "AbortError") {
+          throw new KeygenTimeoutError()
+        }
         throw e
       } finally {
         clearTimeout(id)
       }
     }
+  }
+
+  private async handleNonOk(
+    res: Response,
+    context: string
+  ): Promise<never> {
+    const errText = await res.text().catch(() => "")
+    const message = `[keygen] ${context} failed: ${res.status} ${res.statusText} ${errText}`
+    if (res.status === 401 || res.status === 403) {
+      throw new KeygenAuthError(res.status, message)
+    }
+    throw new KeygenHttpError(res.status, message)
   }
 
   async createLicense(input: CreateInput) {
@@ -112,22 +179,23 @@ export default class KeygenService {
       )
     } catch (e) {
       throw new Error(
-        `[keygen] create license request failed: ${e instanceof Error ? e.message : e}`
+        `[keygen] create license request failed: ${
+          e instanceof Error ? e.message : e
+        }`
       )
     }
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] create license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      await this.handleNonOk(res, "create license")
     }
 
-    const payload = (await res.json()) as any
+    const payload = (await res.json()) as LicenseResponse
     const licenseId = payload?.data?.id
     const key = payload?.data?.attributes?.key || null
 
-    const query = this.container.resolve<any>("query")
+    const query = this.container.resolve<{
+      graph: (args: unknown) => Promise<{ data?: Record<string, unknown>[] }>
+    }>("query")
     const { data } = await query.graph({
       entity: "keygen_license",
       data: [
@@ -144,7 +212,7 @@ export default class KeygenService {
       ],
     })
 
-    return { record: data?.[0], raw: payload }
+    return { record: data?.[0] as Record<string, unknown>, raw: payload }
   }
 
   async suspendLicense(licenseId: string) {
@@ -171,13 +239,10 @@ export default class KeygenService {
     }
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] suspend license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      await this.handleNonOk(res, "suspend license")
     }
 
-    return (await res.json().catch(() => ({}))) as any
+    return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
 
   async revokeLicense(licenseId: string) {
@@ -210,13 +275,10 @@ export default class KeygenService {
     }
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] revoke license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      await this.handleNonOk(res, "revoke license")
     }
 
-    return (await res.json().catch(() => ({}))) as any
+    return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
 
   async getLicenseWithMachines(licenseId: string) {
@@ -232,13 +294,12 @@ export default class KeygenService {
     )
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] get license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      await this.handleNonOk(res, "get license")
     }
 
-    const licensePayload = (await res.json().catch(() => ({}))) as any
+    const licensePayload = (await res
+      .json()
+      .catch(() => ({}))) as LicenseResponse
     const max =
       licensePayload?.data?.attributes?.maxMachines ??
       licensePayload?.maxMachines ??
@@ -261,15 +322,14 @@ export default class KeygenService {
     )
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] list machines failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      await this.handleNonOk(res, "list machines")
     }
 
-    const machinesPayload = (await res.json().catch(() => ({}))) as any
+    const machinesPayload = (await res
+      .json()
+      .catch(() => ({}))) as MachinesResponse
     const machines = Array.isArray(machinesPayload?.data)
-      ? machinesPayload.data.map((m: any) => ({
+      ? machinesPayload.data.map((m) => ({
           id: m?.id,
           name: m?.attributes?.name ?? null,
           fingerprint: m?.attributes?.fingerprint ?? null,
@@ -299,13 +359,12 @@ export default class KeygenService {
     )
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] get license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      await this.handleNonOk(res, "get license")
     }
 
-    const licensePayload = (await res.json().catch(() => ({}))) as any
+    const licensePayload = (await res
+      .json()
+      .catch(() => ({}))) as LicenseResponse
     const max =
       licensePayload?.data?.attributes?.maxMachines ??
       licensePayload?.maxMachines ??
@@ -323,13 +382,12 @@ export default class KeygenService {
     )
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] list machines failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      await this.handleNonOk(res, "list machines")
     }
 
-    const machinesPayload = (await res.json().catch(() => ({}))) as any
+    const machinesPayload = (await res
+      .json()
+      .catch(() => ({}))) as MachinesResponse
     const used = Array.isArray(machinesPayload?.data)
       ? machinesPayload.data.length
       : 0
@@ -373,12 +431,12 @@ export default class KeygenService {
       if (res.status === 409 || res.status === 422) {
         throw new SeatsExhaustedError(max, used)
       }
-      throw new Error(
-        `[keygen] create machine failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      await this.handleNonOk(res, "create machine")
     }
 
-    const machinePayload = (await res.json().catch(() => ({}))) as any
+    const machinePayload = (await res
+      .json()
+      .catch(() => ({}))) as MachineResponse
     return {
       machineId: machinePayload?.data?.id,
       seats: { max, used: used + 1 },
@@ -400,13 +458,10 @@ export default class KeygenService {
     )
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] delete machine failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      await this.handleNonOk(res, "delete machine")
     }
 
-    return (await res.json().catch(() => ({}))) as any
+    return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
 }
 

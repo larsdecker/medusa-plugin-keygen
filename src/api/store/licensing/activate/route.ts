@@ -1,8 +1,14 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { SeatsExhaustedError } from "../../../../modules/keygen/service"
+import {
+  SeatsExhaustedError,
+  KeygenAuthError,
+} from "../../../../modules/keygen/service"
+
+type ReqUser = { id?: string; customer_id?: string }
 
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
-  const user: any = (req as any).user || (req as any).auth
+  const rq = req as MedusaRequest & { user?: ReqUser; auth?: ReqUser }
+  const user: ReqUser | undefined = rq.user ?? rq.auth
   const customerId = user?.customer_id || user?.id
 
   if (!customerId) {
@@ -19,13 +25,18 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     }
   }
 
-  if (!productId || !device?.fingerprint) {
+  if (!productId) {
+    return res.status(400).json({ message: "productId is required" })
+  }
+  if (!device?.fingerprint) {
     return res
       .status(400)
-      .json({ message: "productId and device.fingerprint are required" })
+      .json({ message: "device.fingerprint is required" })
   }
 
-  const query = req.scope.resolve("query")
+  const query = req.scope.resolve<{
+    graph: (args: unknown) => Promise<{ data?: Record<string, unknown>[] }>
+  }>("query")
   const { data } = await query.graph({
     entity: "keygen_license",
     filters: { customer_id: customerId, keygen_product_id: productId },
@@ -38,7 +49,9 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(404).json({ message: "License not found" })
   }
 
-  const keygen = req.scope.resolve<any>("keygenService")
+  const keygen = req.scope.resolve<typeof import("../../../../modules/keygen/service").default>(
+    "keygenService"
+  )
 
   try {
     const result = await keygen.activateMachine({
@@ -54,7 +67,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       machineId: result.machineId,
       seats: result.seats,
     })
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof SeatsExhaustedError) {
       return res.status(409).json({
         status: "DENIED",
@@ -65,8 +78,11 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       })
     }
 
-    return res
-      .status(500)
-      .json({ message: e?.message || "Activation failed" })
+    if (e instanceof KeygenAuthError) {
+      return res.status(401).json({ message: e.message })
+    }
+
+    const message = e instanceof Error ? e.message : "Activation failed"
+    return res.status(500).json({ message })
   }
 }
