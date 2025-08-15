@@ -30,7 +30,10 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
 
   if (!r.ok) {
     const text = await r.text().catch(() => "")
-    return res.status(r.status).json({ message: text || r.statusText })
+    console.error(
+      `[keygen] validation request failed: ${r.status} ${text || r.statusText}`
+    )
+    return res.status(r.status).json({ message: "Validation failed" })
   }
 
   const json = (await r.json()) as any

@@ -9,7 +9,18 @@ export default function verifyKeygenWebhook(req: any, res: any, next: any) {
     return
   }
 
-  const rawBody = req.rawBody || (typeof req.body === "string" ? req.body : JSON.stringify(req.body))
+  const rawBody =
+    typeof req.rawBody === "string" || Buffer.isBuffer(req.rawBody)
+      ? req.rawBody
+      : typeof req.body === "string"
+      ? req.body
+      : undefined
+
+  if (!rawBody) {
+    res.status?.(400).json?.({ message: "Missing raw body" })
+    return
+  }
+
   const computed = crypto.createHmac("sha256", secret).update(rawBody).digest("hex")
 
   const incoming = Buffer.from(signature, "hex")
