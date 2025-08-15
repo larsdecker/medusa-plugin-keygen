@@ -16,12 +16,12 @@
     "@medusajs/medusa": "^2.8.0"
   },
   "devDependencies": {
+    "@medusajs/cli": "^2.8.0",
     "@medusajs/framework": "^2.8.0",
     "@medusajs/medusa": "^2.8.0",
-    "@medusajs/cli": "^2.8.0",
+    "@types/node": "^20.11.5",
     "typescript": "^5.4.0",
-    "vitest": "^1.6.0",
-    "@types/node": "^20.11.5"
+    "vitest": "^1.6.0"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -43,5 +43,8 @@
   "homepage": "https://github.com/YOUR_ORG/medusa-plugin-keygen#readme",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
   }
 }

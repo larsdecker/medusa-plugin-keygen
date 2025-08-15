@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest"
+import { describe, it, expect, vi, beforeEach } from "vitest"
 
 vi.mock("@medusajs/framework", () => ({
   MedusaService: () => class {},
@@ -20,9 +20,9 @@ vi.mock("@medusajs/framework/utils", () => {
   return { model: { define: vi.fn(() => ({})), text: chain, id: chain, enum: chain } }
 })
 
-import orderPlacedSubscriber from "../subscribers/order-placed"
 import { ContainerRegistrationKeys } from "@medusajs/framework"
-import KeygenService from "../modules/keygen/service"
+let orderPlacedSubscriber: any
+let KeygenService: any
 
 const buildContainer = () => {
   const logger = { info: vi.fn(), error: vi.fn() }
@@ -64,6 +64,15 @@ const buildContainer = () => {
 }
 
 describe("orderPlacedSubscriber", () => {
+  beforeEach(async () => {
+    process.env.KEYGEN_ACCOUNT = "acct_123"
+    process.env.KEYGEN_TOKEN = "tok_123"
+    delete process.env.KEYGEN_HOST
+    vi.resetModules()
+    ;({ default: orderPlacedSubscriber } = await import("../subscribers/order-placed"))
+    KeygenService = (await import("../modules/keygen/service")).default
+  })
+
   it("creates license for items with metadata", async () => {
     const { container, logger, keygen } = buildContainer()
     await orderPlacedSubscriber({

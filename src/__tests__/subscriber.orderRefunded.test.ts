@@ -20,14 +20,14 @@ vi.mock("@medusajs/framework/utils", () => {
   return { model: { define: vi.fn(() => ({})), text: chain, id: chain, enum: chain } }
 })
 
+import orderRefundedSubscriber from "../subscribers/order-refunded"
 import { ContainerRegistrationKeys } from "@medusajs/framework"
-let orderCanceledSubscriber: any
-let KeygenService: any
+import KeygenService from "../modules/keygen/service"
 
 const buildContainer = () => {
   const logger = { info: vi.fn(), error: vi.fn() }
   const query = { graph: vi.fn() }
-  const keygen = { suspendLicense: vi.fn() }
+  const keygen = { revokeLicense: vi.fn() }
 
   const container = {
     resolve(key: string) {
@@ -49,17 +49,14 @@ const buildContainer = () => {
   return { container, logger, query, keygen }
 }
 
-describe("orderCanceledSubscriber", () => {
-  beforeEach(async () => {
+describe("orderRefundedSubscriber", () => {
+  beforeEach(() => {
     process.env.KEYGEN_ACCOUNT = "acct_123"
     process.env.KEYGEN_TOKEN = "tok_123"
     delete process.env.KEYGEN_HOST
-    vi.resetModules()
-    ;({ default: orderCanceledSubscriber } = await import("../subscribers/order-canceled"))
-    KeygenService = (await import("../modules/keygen/service")).default
   })
 
-  it("suspends licenses for canceled order", async () => {
+  it("revokes licenses for refunded order", async () => {
     const { container, logger, query, keygen } = buildContainer()
     query.graph = vi
       .fn()
@@ -70,29 +67,28 @@ describe("orderCanceledSubscriber", () => {
       })
       .mockResolvedValue({ data: [] })
 
-    await orderCanceledSubscriber({
+    await orderRefundedSubscriber({
       container: container as any,
-      event: { name: "order.canceled", data: { id: "order_1" } } as any,
+      event: { name: "order.refunded", data: { id: "order_1" } } as any,
     })
 
-    expect(keygen.suspendLicense).toHaveBeenCalledWith("lic_1")
+    expect(keygen.revokeLicense).toHaveBeenCalledWith("lic_1")
     expect(query.graph).toHaveBeenLastCalledWith({
       entity: "keygen_license",
-      data: [{ id: "db_1", status: "suspended" }],
+      data: [{ id: "db_1", status: "revoked" }],
     })
     expect(logger.info).toHaveBeenCalledWith(
-      "[keygen] license suspended for order order_1 / item item_1: lic_1"
+      "[keygen] license revoked for order order_1 / item item_1: lic_1"
     )
   })
 
-  it("ignores non order canceled events", async () => {
+  it("ignores non order refunded events", async () => {
     const { container, logger, keygen } = buildContainer()
-    await orderCanceledSubscriber({
+    await orderRefundedSubscriber({
       container: container as any,
       event: { name: "order.updated", data: { id: "order_1" } } as any,
     })
-    expect(keygen.suspendLicense).not.toHaveBeenCalled()
+    expect(keygen.revokeLicense).not.toHaveBeenCalled()
     expect(logger.info).not.toHaveBeenCalled()
   })
 })
-

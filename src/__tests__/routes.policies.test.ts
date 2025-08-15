@@ -1,7 +1,5 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { POST as createPolicy } from "../api/admin/keygen/policies/route"
-import { POST as clonePolicy } from "../api/admin/keygen/policies/clone/route"
 
 const mockRes = () => {
   const r: any = {}
@@ -14,6 +12,7 @@ describe("Policies routes", () => {
   beforeEach(() => {
     process.env.KEYGEN_ACCOUNT = "acct_123"
     process.env.KEYGEN_TOKEN = "tok_123"
+    vi.resetModules()
   })
 
   it("creates a policy", async () => {
@@ -23,6 +22,7 @@ describe("Policies routes", () => {
       json: async () => ({ data: { id: "pol_new", attributes: { name: "Annual – 2 Seats" } } })
     })
 
+    const { POST: createPolicy } = await import("../api/admin/keygen/policies/route")
     const req: any = { body: { productId: "prod_1", name: "Annual – 2 Seats", maxMachines: 2 } }
     const res: any = mockRes()
 
@@ -43,6 +43,7 @@ describe("Policies routes", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: "pol_cloned" } }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
 
+    const { POST: clonePolicy } = await import("../api/admin/keygen/policies/clone/route")
     const req: any = { body: { sourcePolicyId: "pol_src", targetProductId: "prod_2" } }
     const res: any = mockRes()
 

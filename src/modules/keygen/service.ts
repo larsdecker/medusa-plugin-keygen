@@ -1,5 +1,6 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
 import type { KeygenPluginOptions } from "../../types"
+import { env } from "../../config/env"
 
 type CreateInput = {
   orderId: string
@@ -25,15 +26,12 @@ export default class KeygenService {
     options: KeygenPluginOptions = {}
   ) {
     this.options = options
-    this.account = process.env.KEYGEN_ACCOUNT || ""
-    this.token = process.env.KEYGEN_TOKEN || ""
+    this.account = env.KEYGEN_ACCOUNT
+    this.token = env.KEYGEN_TOKEN
     this.timeout = options.timeoutMs ?? 10000
     this.host =
-      options.host || process.env.KEYGEN_HOST || "https://api.keygen.sh"
-    this.version = process.env.KEYGEN_VERSION || "1.8"
-    if (!this.account || !this.token) {
-      console.warn("[keygen] Missing KEYGEN_ACCOUNT or KEYGEN_TOKEN")
-    }
+      options.host || env.KEYGEN_HOST
+    this.version = env.KEYGEN_VERSION
   }
 
   private async fetchWithRetry(
@@ -166,6 +164,45 @@ export default class KeygenService {
       const errText = await res.text().catch(() => "")
       throw new Error(
         `[keygen] suspend license failed: ${res.status} ${res.statusText} ${errText}`
+      )
+    }
+
+    return (await res.json().catch(() => ({}))) as any
+  }
+
+  async revokeLicense(licenseId: string) {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), this.timeout)
+
+    let res: Response
+    try {
+      res = await fetch(
+        `${this.host}/v1/accounts/${this.account}/licenses/${licenseId}/actions/revoke`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "Keygen-Version": this.version,
+          },
+          signal: controller.signal,
+        }
+      )
+    } catch (e) {
+      throw new Error(
+        `[keygen] revoke license request failed: ${
+          e instanceof Error ? e.message : e
+        }`
+      )
+    } finally {
+      clearTimeout(id)
+    }
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "")
+      throw new Error(
+        `[keygen] revoke license failed: ${res.status} ${res.statusText} ${errText}`
       )
     }
 

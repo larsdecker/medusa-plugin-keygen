@@ -17,13 +17,12 @@ vi.mock("@medusajs/framework/utils", () => {
   return { model: { define: vi.fn(() => ({})), text: chain, id: chain, enum: chain } }
 })
 
-import KeygenService from "../modules/keygen/service"
-
+let KeygenService: any
 let container: any
 let query: any
 
 describe("KeygenService.createLicense", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // @ts-ignore
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -34,6 +33,8 @@ describe("KeygenService.createLicense", () => {
     process.env.KEYGEN_ACCOUNT = "acct_123"
     process.env.KEYGEN_TOKEN = "tok_123"
     delete process.env.KEYGEN_HOST
+    vi.resetModules()
+    KeygenService = (await import("../modules/keygen/service")).default
     query = { graph: vi.fn().mockResolvedValue({ data: [] }) }
     container = {
       resolve(key: string) {
@@ -78,23 +79,27 @@ describe("KeygenService.createLicense", () => {
   })
 
 
-    it("uses custom host from env", async () => {
-      process.env.KEYGEN_HOST = "https://custom.example.com"
-      const svc = new (KeygenService as any)(container, {})
 
-      await svc.createLicense({ orderId: "order_1" })
+  it("uses custom host from env", async () => {
+    process.env.KEYGEN_HOST = "https://custom.example.com"
+    vi.resetModules()
+    KeygenService = (await import("../modules/keygen/service")).default
+    const svc = new (KeygenService as any)(container, {})
+    svc.createKeygenLicenses = vi.fn().mockResolvedValue({ data: [] })
+    await svc.createLicense({ orderId: "order_1" })
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://custom.example.com/v1/accounts/acct_123/licenses",
-        expect.objectContaining({
-          headers: expect.objectContaining({ "Keygen-Version": "1.8" })
-        })
-      )
-    })
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://custom.example.com/v1/accounts/acct_123/licenses",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "Keygen-Version": "1.8" })
+      })
+    )
+  })
 
-    it("throws a descriptive error on network failure", async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error("Network down"))
-      const svc = new (KeygenService as any)(container, {})
+  it("throws a descriptive error on network failure", async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error("Network down"))
+    const svc = new (KeygenService as any)(container, {})
+
 
       await expect(svc.createLicense({ orderId: "order_1" })).rejects.toThrow(
         "[keygen] create license request failed: Network down"
@@ -146,3 +151,4 @@ describe("KeygenService.createLicense", () => {
       vi.useRealTimers()
     })
   })
+})

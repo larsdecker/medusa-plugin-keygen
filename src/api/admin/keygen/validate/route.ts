@@ -1,11 +1,12 @@
 
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { env } from "../../../../config/env"
 
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   const { type, id } = (req.body ?? {}) as { type: "product" | "policy"; id: string }
-  const account = process.env.KEYGEN_ACCOUNT
-  const token = process.env.KEYGEN_TOKEN
-  const version = process.env.KEYGEN_VERSION || "1.8"
+  const account = env.KEYGEN_ACCOUNT
+  const token = env.KEYGEN_TOKEN
+  const version = env.KEYGEN_VERSION
 
   if (!account || !token) {
     return res.status(500).json({ message: "KEYGEN_ACCOUNT/TOKEN missing" })
@@ -14,7 +15,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(400).json({ message: "Invalid request" })
   }
 
-  const host = process.env.KEYGEN_HOST || "https://api.keygen.sh"
+  const host = env.KEYGEN_HOST
   const url =
     type === "product"
       ? `${host}/v1/accounts/${account}/products/${id}`
@@ -30,7 +31,10 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
 
   if (!r.ok) {
     const text = await r.text().catch(() => "")
-    return res.status(r.status).json({ message: text || r.statusText })
+    console.error(
+      `[keygen] validation request failed: ${r.status} ${text || r.statusText}`
+    )
+    return res.status(r.status).json({ message: "Validation failed" })
   }
 
   const json = (await r.json()) as any
