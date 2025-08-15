@@ -19,7 +19,7 @@ export default async function orderPlacedSubscriber({
   const keygen = container.resolve<KeygenService>(KeygenService.registrationName)
 
   try {
-    const query = container.resolve("query")
+    const query = container.resolve<any>("query")
     const { data: orders } = await query.graph({
       entity: "order",
       filters: { id: event.data.id },

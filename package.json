@@ -12,20 +12,20 @@
     "licensing"
   ],
   "peerDependencies": {
-    "@medusajs/framework": "^2.8.0",
-    "@medusajs/medusa": "^2.8.0"
+    "@medusajs/framework": "^2.9.0",
+    "@medusajs/medusa": "^2.9.0"
   },
   "devDependencies": {
-    "@medusajs/cli": "^2.8.0",
-    "@medusajs/framework": "^2.8.0",
-    "@medusajs/medusa": "^2.8.0",
-    "@types/node": "^20.11.5",
-    "typescript": "^5.4.0",
-    "vitest": "^1.6.0"
+    "@medusajs/cli": "^2.9.0",
+    "@medusajs/framework": "^2.9.0",
+    "@medusajs/medusa": "^2.9.0",
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run",
+    "test": "KEYGEN_ACCOUNT=test KEYGEN_TOKEN=test vitest run",
     "prepublishOnly": "npm run build"
   },
   "exports": {
@@ -45,6 +45,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "zod": "^3.25.76"
+    "zod": "^4.0.17"
   }
 }

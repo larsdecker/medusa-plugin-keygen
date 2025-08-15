@@ -2,7 +2,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const { order_id } = req.params as { order_id: string }
-  const query = req.scope.resolve("query")
+  const query = req.scope.resolve<any>("query")
 
   const { data } = await query.graph({
     entity: "keygen_license",
