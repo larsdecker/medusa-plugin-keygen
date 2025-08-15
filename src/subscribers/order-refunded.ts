@@ -11,7 +11,7 @@ export default async function orderRefundedSubscriber({
   const keygen = container.resolve<KeygenService>(KeygenService.registrationName)
 
   try {
-    const query = container.resolve("query")
+    const query = container.resolve("query") as any
     const { data: licenses } = await query.graph({
       entity: "keygen_license",
       filters: { order_id: event.data.id },
@@ -26,7 +26,7 @@ export default async function orderRefundedSubscriber({
       await query.graph({
         entity: "keygen_license",
         data: [{ id: lic.id, status: "revoked" }],
-      })
+      } as any)
 
       logger.info(
         `[keygen] license revoked for order ${event.data.id} / item ${lic.order_item_id}: ${lic.keygen_license_id}`,
