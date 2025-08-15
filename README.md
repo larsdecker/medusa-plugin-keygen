@@ -24,8 +24,21 @@ Includes **admin widgets** (product & variant) and **admin server routes** (vali
 
 - **Store API**:
   - `GET /store/me/licenses` – list licenses for the authenticated customer
+    - supports `limit`, `offset`, `q` and `order` query parameters for pagination and sorting
+    - when paginated the response contains `{ licenses, count, limit, offset }`
   - `GET /store/me/licenses/:license_id` – retrieve details for a specific license
   - `POST /store/me/licenses/:license_id/download` – create a temporary download link for a Keygen asset
+- Example paginated response:
+  ```json
+  {
+    "licenses": [
+      { "id": "lic_123", "key": "XXXX-YYYY", "status": "active" }
+    ],
+    "count": 65,
+    "limit": 20,
+    "offset": 0
+  }
+  ```
 - **Download link caching**: the Keygen service caches generated download links until they expire to reduce redundant requests
 - **Strict TypeScript types**: license APIs and the Keygen service expose tightened TypeScript interfaces so request and response shapes are fully typed
 
