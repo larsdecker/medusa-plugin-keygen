@@ -12,6 +12,26 @@ type CreateInput = {
   metadata?: Record<string, unknown>
 }
 
+export interface DownloadLink {
+  url: string
+  expiresAt: string
+  ttlSeconds: number
+  contentDisposition?: string
+}
+
+export interface CreateDownloadLinkInput {
+  licenseId: string
+  assetId: string
+  filename?: string
+}
+
+type CachedLink = {
+  url: string
+  expiresAt: number
+  ttlSeconds: number
+  contentDisposition?: string
+}
+
 export class SeatsExhaustedError extends Error {
   code = "SEATS_EXHAUSTED"
   seats: { max: number; used: number }
@@ -30,6 +50,7 @@ export default class KeygenService {
   private host: string
   private version: string
   private options: KeygenPluginOptions
+  private downloadCache = new Map<string, CachedLink>()
 
   constructor(
     protected readonly container: MedusaContainer,
@@ -407,6 +428,110 @@ export default class KeygenService {
     }
 
     return (await res.json().catch(() => ({}))) as any
+  }
+
+  async createDownloadLink(
+    input: CreateDownloadLinkInput
+  ): Promise<DownloadLink> {
+    const cacheKey = `${input.licenseId}:${input.assetId}:${
+      input.filename ?? ""
+    }`
+    const cached = this.downloadCache.get(cacheKey)
+    if (cached && cached.expiresAt > Date.now()) {
+      return {
+        url: cached.url,
+        expiresAt: new Date(cached.expiresAt).toISOString(),
+        ttlSeconds: cached.ttlSeconds,
+        ...(cached.contentDisposition
+          ? { contentDisposition: cached.contentDisposition }
+          : {}),
+      }
+    }
+
+    const body: Record<string, unknown> = {
+      data: {
+        type: "download-links",
+        relationships: {
+          license: { data: { type: "licenses", id: input.licenseId } },
+        },
+      },
+    }
+
+    if (input.filename) {
+      body.data.attributes = { filename: input.filename }
+    }
+
+    let res: Response
+    try {
+      res = await this.fetchWithRetry(
+        `${this.host}/v1/accounts/${this.account}/assets/${input.assetId}/actions/download`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "Keygen-Version": this.version,
+          },
+          body: JSON.stringify(body),
+        }
+      )
+    } catch (e) {
+      throw new Error(
+        `[keygen] create download link request failed: ${
+          e instanceof Error ? e.message : e
+        }`
+      )
+    }
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "")
+      throw new Error(
+        `[keygen] create download link failed: ${res.status} ${res.statusText} ${errText}`
+      )
+    }
+
+    const payload = (await res.json().catch(() => ({}))) as {
+      data?: {
+        attributes?: {
+          url?: string
+          downloadUrl?: string
+          expiresAt?: string
+          expiry?: string
+          ttlSeconds?: number
+          contentDisposition?: string
+        }
+      }
+    }
+    const attrs = payload.data?.attributes ?? {}
+    const url = attrs.url ?? attrs.downloadUrl ?? null
+    const expiresAtStr = attrs.expiresAt ?? attrs.expiry ?? null
+    const expiresAt = expiresAtStr
+      ? Date.parse(expiresAtStr)
+      : Date.now() + 900 * 1000
+    const ttlSeconds =
+      attrs.ttlSeconds ?? Math.floor((expiresAt - Date.now()) / 1000)
+    const contentDisposition = attrs.contentDisposition
+
+    if (!url) {
+      throw new Error("[keygen] download link response missing url")
+    }
+
+    const link: DownloadLink = {
+      url,
+      expiresAt: new Date(expiresAt).toISOString(),
+      ttlSeconds,
+      ...(contentDisposition ? { contentDisposition } : {}),
+    }
+
+    this.downloadCache.set(cacheKey, {
+      url,
+      expiresAt,
+      ttlSeconds,
+      contentDisposition,
+    })
+
+    return link
   }
 }
 
