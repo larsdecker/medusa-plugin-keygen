@@ -14,6 +14,16 @@ type License = {
   product?: { id: string }
 }
 
+const maskKey = (key: string | null) => {
+  if (!key) return ""
+  const parts = key.split("-")
+  if (parts.length <= 1) {
+    return key.length > 4 ? key.replace(/.(?=.{4})/g, "*") : key
+  }
+  const last = parts.pop()!
+  return [...parts.map(() => "****"), last].join("-")
+}
+
 export const GET = async (
   req: MedusaRequest,
   res: MedusaResponse<
@@ -37,11 +47,22 @@ export const GET = async (
     graph<T>(cfg: any): Promise<{ data: T[] | null; metadata?: { count?: number } }>
   }
 
-  const { limit: limitParam, offset: offsetParam, q, order } = (req.query ?? {}) as {
+  const {
+    limit: limitParam,
+    offset: offsetParam,
+    q,
+    order,
+    productId,
+    product_id,
+    status,
+  } = (req.query ?? {}) as {
     limit?: string
     offset?: string
     q?: string
     order?: string
+    productId?: string
+    product_id?: string
+    status?: string
   }
 
   const shouldPaginate =
@@ -50,15 +71,21 @@ export const GET = async (
   const take = shouldPaginate ? parseInt(limitParam ?? "20", 10) : undefined
   const skip = shouldPaginate ? parseInt(offsetParam ?? "0", 10) : undefined
 
-  let orderBy: Record<string, "asc" | "desc"> | undefined
+  let orderBy: Record<string, "asc" | "desc"> = { created_at: "desc" }
   if (order) {
     const [field, direction] = order.split(":")
     orderBy = { [field]: (direction as "asc" | "desc") ?? "asc" }
   }
 
+  const filters: Record<string, any> = { customer_id: customerId }
+  if (q) filters.q = q
+  const prodFilter = productId ?? product_id
+  if (prodFilter) filters.keygen_product_id = prodFilter
+  if (status) filters.status = status
+
   const cfg: any = {
     entity: "keygen_license",
-    filters: { customer_id: customerId, ...(q ? { q } : {}) },
+    filters,
     fields: [
       "keygen_license_id",
       "license_key",
@@ -73,7 +100,7 @@ export const GET = async (
 
   const licenses: License[] = (data ?? []).map((l) => ({
     id: l.keygen_license_id,
-    key: l.license_key,
+    key: maskKey(l.license_key),
     status: l.status,
     ...(l.keygen_product_id
       ? { product: { id: l.keygen_product_id } }
