@@ -3,12 +3,15 @@ import { defineWidgetConfig } from "@medusajs/admin-sdk"
 import type { DetailWidgetProps, AdminProductVariant } from "@medusajs/framework/types"
 import { Container, Heading, Input, Button, Label, Text, Badge, Switch } from "@medusajs/ui"
 import { useEffect, useMemo, useState } from "react"
-import { loadRecent, validateOnServer } from "../utils/keygen"
+import { loadRecent, validateOnServer, ValidationResponse } from "../utils/keygen"
 
 const LS_RECENT_PRODUCTS = "keygen_recent_products"
 const LS_RECENT_POLICIES = "keygen_recent_policies"
 
-async function patchVariantMetadata(variantId: string, meta: Record<string, any>) {
+async function patchVariantMetadata(
+  variantId: string,
+  meta: Record<string, unknown>
+) {
   const res = await fetch(`/admin/variants/${variantId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -41,19 +44,27 @@ const KeygenVariantWidget = ({ data }: DetailWidgetProps<AdminProductVariant>) =
   }, [])
 
   async function handleValidate() {
-    const resP = kp ? await validateOnServer("product", kp) : { ok: true }
-    const resL = kl ? await validateOnServer("policy", kl) : { ok: true }
-    setVp(resP.ok ? { ok:true, name: (resP as any).data?.name } : { ok:false, message: (resP as any).message })
-    setVl(resL.ok ? { ok:true, name: (resL as any).data?.name } : { ok:false, message: (resL as any).message })
+    const resP: ValidationResponse = kp
+      ? await validateOnServer("product", kp)
+      : { ok: true }
+    const resL: ValidationResponse = kl
+      ? await validateOnServer("policy", kl)
+      : { ok: true }
+    setVp(resP.ok ? { ok: true, name: resP.data?.name } : { ok: false, message: resP.message })
+    setVl(resL.ok ? { ok: true, name: resL.data?.name } : { ok: false, message: resL.message })
   }
 
   async function handleSave() {
     if (autoValidate) {
-      const resP = kp ? await validateOnServer("product", kp) : { ok: true }
-      const resL = kl ? await validateOnServer("policy", kl) : { ok: true }
-      if (!(resP as any).ok || !(resL as any).ok) {
-        setVp((resP as any).ok ? { ok:true, name: (resP as any).data?.name } : { ok:false, message: (resP as any).message })
-        setVl((resL as any).ok ? { ok:true, name: (resL as any).data?.name } : { ok:false, message: (resL as any).message })
+      const resP: ValidationResponse = kp
+        ? await validateOnServer("product", kp)
+        : { ok: true }
+      const resL: ValidationResponse = kl
+        ? await validateOnServer("policy", kl)
+        : { ok: true }
+      if (!resP.ok || !resL.ok) {
+        setVp(resP.ok ? { ok: true, name: resP.data?.name } : { ok: false, message: resP.message })
+        setVl(resL.ok ? { ok: true, name: resL.data?.name } : { ok: false, message: resL.message })
         return
       }
     }

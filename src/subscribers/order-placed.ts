@@ -6,13 +6,15 @@ import type { KeygenPluginOptions } from "../types"
 export default async function orderPlacedSubscriber({
   container,
   event,
-}: SubscriberArgs<any>) {
+}: SubscriberArgs<{ id: string }>) {
   if (event.name !== "order.placed") return
 
   const logger = container.resolve("logger")
-  const config = container.resolve<any>("configModule")
-  const pluginCfg = (config?.plugins || []).find(
-    (p: any) => typeof p?.resolve === "string" && p.resolve.includes("medusa-plugin-keygen")
+  const config = container.resolve("configModule") as {
+    plugins?: { resolve?: string; options?: KeygenPluginOptions }[]
+  }
+  const pluginCfg = (config.plugins || []).find(
+    (p) => typeof p?.resolve === "string" && p.resolve.includes("medusa-plugin-keygen")
   )
   const options: KeygenPluginOptions = pluginCfg?.options || {}
 
@@ -66,7 +68,8 @@ export default async function orderPlacedSubscriber({
         `[keygen] license created for order ${order.id} / item ${item.id}: ${record?.license_key}`
       )
     }
-  } catch (e: any) {
-    logger.error(`[keygen] failed on order.placed: ${e?.message}`)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    logger.error(`[keygen] failed on order.placed: ${msg}`)
   }
 }

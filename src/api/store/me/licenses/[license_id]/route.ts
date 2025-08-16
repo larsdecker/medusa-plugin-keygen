@@ -39,7 +39,7 @@ export const GET = async (
   const licenseId = req.params.license_id
 
   const query = req.scope.resolve("query") as {
-    graph<T>(cfg: any): Promise<{ data: T[] | null }>
+    graph<T>(cfg: Record<string, unknown>): Promise<{ data: T[] | null }>
   }
   const { data } = await query.graph<LicenseRow>({
     entity: "keygen_license",
@@ -59,12 +59,18 @@ export const GET = async (
   }
 
   const keygen = req.scope.resolve<KeygenService>("keygenService")
-  let det: {
-    key?: string
-    status?: string
+  type LicenseDetails = {
+    key?: string | null
+    status?: string | null
     maxMachines?: number
-    machines?: any[]
-  } | null = null
+    machines?: {
+      id?: string
+      name?: string | null
+      fingerprint?: string | null
+      platform?: string | null
+    }[]
+  }
+  let det: LicenseDetails | null = null
   try {
     det = await keygen.getLicenseWithMachines(l.keygen_license_id)
   } catch (_) {

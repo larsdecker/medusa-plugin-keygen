@@ -1,5 +1,7 @@
 
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import KeygenService from "../../../../../modules/keygen/service"
+
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const { order_id } = req.params as { order_id: string }
   const query = req.scope.resolve("query")
@@ -25,7 +27,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
 
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   const { order_id } = req.params as { order_id: string }
-  const keygen = req.scope.resolve<any>("keygenService")
+  const keygen = req.scope.resolve<KeygenService>("keygenService")
   const { policyId, productId, orderItemId } = (req.body ?? {}) as {
     policyId?: string
     productId?: string

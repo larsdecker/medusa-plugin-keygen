@@ -1,8 +1,15 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { SeatsExhaustedError } from "../../../../modules/keygen/service"
+import KeygenService from "../../../../modules/keygen/service"
+
+type AuthenticatedRequest = MedusaRequest & {
+  user?: { id?: string; customer_id?: string }
+  auth?: { id?: string; customer_id?: string }
+}
 
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
-  const user: any = (req as any).user || (req as any).auth
+  const authReq = req as AuthenticatedRequest
+  const user = authReq.user || authReq.auth
   const customerId = user?.customer_id || user?.id
 
   if (!customerId) {
@@ -38,7 +45,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(404).json({ message: "License not found" })
   }
 
-  const keygen = req.scope.resolve<any>("keygenService")
+  const keygen = req.scope.resolve<KeygenService>("keygenService")
 
   try {
     const result = await keygen.activateMachine({
@@ -54,7 +61,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       machineId: result.machineId,
       seats: result.seats,
     })
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof SeatsExhaustedError) {
       return res.status(409).json({
         status: "DENIED",
@@ -65,8 +72,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       })
     }
 
-    return res
-      .status(500)
-      .json({ message: e?.message || "Activation failed" })
+    const message = e instanceof Error ? e.message : "Activation failed"
+    return res.status(500).json({ message })
   }
 }

@@ -34,7 +34,7 @@ export const POST = async (
   }
 
   const query = req.scope.resolve("query") as {
-    graph<T>(cfg: any): Promise<{ data: T[] | null }>
+    graph<T>(cfg: Record<string, unknown>): Promise<{ data: T[] | null }>
   }
   const { data } = await query.graph<{ keygen_license_id: string }>({
     entity: "keygen_license",

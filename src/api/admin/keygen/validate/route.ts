@@ -37,7 +37,9 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(r.status).json({ message: "Validation failed" })
   }
 
-  const json = (await r.json()) as any
+  const json = (await r.json()) as {
+    data?: { id?: string; attributes?: { name?: string; code?: string } }
+  }
   const name =
     json?.data?.attributes?.name ||
     json?.data?.id ||

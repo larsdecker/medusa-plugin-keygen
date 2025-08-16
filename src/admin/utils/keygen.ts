@@ -13,7 +13,16 @@ export const pushRecent = (key: string, value: string) => {
   localStorage.setItem(key, JSON.stringify(arr.slice(0, 10)))
 }
 
-export async function validateOnServer(type: "product" | "policy", id: string) {
+export interface ValidationResponse {
+  ok: boolean
+  data?: { name?: string }
+  message?: string
+}
+
+export async function validateOnServer(
+  type: "product" | "policy",
+  id: string
+): Promise<ValidationResponse> {
   if (!id) return { ok: false, message: "ID missing" }
   const res = await fetch(`/admin/keygen/validate`, {
     method: "POST",

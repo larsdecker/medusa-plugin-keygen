@@ -44,7 +44,10 @@ export const GET = async (
   }
 
   const query = req.scope.resolve("query") as {
-    graph<T>(cfg: any): Promise<{ data: T[] | null; metadata?: { count?: number } }>
+    graph<T>(cfg: Record<string, unknown>): Promise<{
+      data: T[] | null
+      metadata?: { count?: number }
+    }>
   }
 
   const {
@@ -77,13 +80,13 @@ export const GET = async (
     orderBy = { [field]: (direction as "asc" | "desc") ?? "asc" }
   }
 
-  const filters: Record<string, any> = { customer_id: customerId }
+  const filters: Record<string, unknown> = { customer_id: customerId }
   if (q) filters.q = q
   const prodFilter = productId ?? product_id
   if (prodFilter) filters.keygen_product_id = prodFilter
   if (status) filters.status = status
 
-  const cfg: any = {
+  const cfg: Record<string, unknown> = {
     entity: "keygen_license",
     filters,
     fields: [

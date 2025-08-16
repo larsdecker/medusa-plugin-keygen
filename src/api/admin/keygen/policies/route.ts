@@ -33,8 +33,10 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(r.status).json({ message: text || r.statusText })
   }
 
-  const json = await r.json() as any
-  const data = (json?.data || []).map((p: any) => ({
+  const json = (await r.json()) as {
+    data?: { id?: string; attributes?: { name?: string } }[]
+  }
+  const data = (json.data || []).map((p) => ({
     id: p?.id,
     name: p?.attributes?.name,
   }))
@@ -63,7 +65,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(400).json({ message: "productId and name are required fields" })
   }
 
-  const payload: any = {
+  const payload: Record<string, unknown> = {
     data: {
       type: "policies",
       attributes: {
@@ -95,7 +97,9 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(r.status).json({ message: text || r.statusText })
   }
 
-  const json = await r.json() as any
+  const json = (await r.json()) as {
+    data?: { id?: string; attributes?: { name?: string } }
+  }
   const id = json?.data?.id
   const createdName = json?.data?.attributes?.name
 

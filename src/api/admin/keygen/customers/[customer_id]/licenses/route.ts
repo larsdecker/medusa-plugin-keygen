@@ -1,9 +1,15 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import KeygenService from "../../../../../../modules/keygen/service"
 
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const { customer_id } = req.params as { customer_id: string }
-  const query = req.scope.resolve("query")
-  const keygen = req.scope.resolve<any>("keygenService")
+  const query = req.scope.resolve("query") as {
+    graph<T>(cfg: Record<string, unknown>): Promise<{
+      data: T[] | null
+      metadata?: { count?: number }
+    }>
+  }
+  const keygen = req.scope.resolve<KeygenService>("keygenService")
 
   const { limit: limitParam, offset: offsetParam, q, order } = (req.query ?? {}) as {
     limit?: string
@@ -24,7 +30,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     orderBy = { [field]: (direction as "asc" | "desc") ?? "asc" }
   }
 
-  const { data, metadata } = await query.graph({
+  const { data, metadata } = await query.graph<LicenseRow>({
     entity: "keygen_license",
     filters: { customer_id, ...(q ? { q } : {}) },
     fields: [
@@ -40,8 +46,17 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     ...(orderBy ? { orderBy } : {}),
   })
 
+  type LicenseRow = {
+    id?: string
+    license_key: string
+    keygen_license_id?: string
+    status: string
+    keygen_policy_id?: string | null
+    keygen_product_id?: string | null
+  }
+
   const licenses = await Promise.all(
-    (data ?? []).map(async (l: any) => {
+    (data ?? []).map(async (l: LicenseRow) => {
       if (!l.keygen_license_id) {
         return { ...l, machines: [], max_machines: 0 }
       }
