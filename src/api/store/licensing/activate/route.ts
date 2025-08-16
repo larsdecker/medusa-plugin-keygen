@@ -65,7 +65,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
         status: 'DENIED',
         code: 'SEATS_EXHAUSTED',
         message:
-          'Keine freien Geräteplätze auf dieser Lizenz. Bitte entfernen Sie ein Gerät im Kundenkonto oder kontaktieren Sie den Support.',
+          'No free device slots available on this license. Please remove a device in your customer account or contact support.',
         seats: e.seats,
       })
     }
