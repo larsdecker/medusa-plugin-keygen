@@ -1,4 +1,5 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import KeygenService from "../../../../../modules/keygen/service"
 
 type AuthUser = { id?: string; customer_id?: string }
 type LicenseRow = {
@@ -12,6 +13,13 @@ type License = {
   key: string
   status: string
   product?: { id: string }
+  max_machines?: number
+  machines?: {
+    id?: string
+    name?: string | null
+    fingerprint?: string | null
+    platform?: string | null
+  }[]
 }
 
 export const GET = async (
@@ -50,11 +58,26 @@ export const GET = async (
     return res.status(404).json({ message: "License not found" })
   }
 
+  const keygen = req.scope.resolve<KeygenService>("keygenService")
+  let det: {
+    key?: string
+    status?: string
+    maxMachines?: number
+    machines?: any[]
+  } | null = null
+  try {
+    det = await keygen.getLicenseWithMachines(l.keygen_license_id)
+  } catch (_) {
+    det = null
+  }
+
   const license: License = {
     id: l.keygen_license_id,
-    key: l.license_key,
-    status: l.status,
+    key: det?.key ?? l.license_key,
+    status: det?.status ?? l.status,
     ...(l.keygen_product_id ? { product: { id: l.keygen_product_id } } : {}),
+    ...(typeof det?.maxMachines === "number" ? { max_machines: det.maxMachines } : {}),
+    ...(Array.isArray(det?.machines) ? { machines: det.machines } : {}),
   }
 
   return res.json({ license })
