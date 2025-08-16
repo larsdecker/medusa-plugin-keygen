@@ -1,6 +1,6 @@
-import type { MedusaContainer } from "@medusajs/framework/types"
-import type { KeygenPluginOptions } from "../../types"
-import { env } from "../../config/env"
+import type { MedusaContainer } from '@medusajs/framework/types'
+import type { KeygenPluginOptions } from '../../types'
+import { env } from '../../config/env'
 
 type CreateInput = {
   orderId: string
@@ -72,11 +72,11 @@ interface QueryClient {
 }
 
 export class SeatsExhaustedError extends Error {
-  code = "SEATS_EXHAUSTED"
+  code = 'SEATS_EXHAUSTED'
   seats: { max: number; used: number }
 
   constructor(max: number, used: number) {
-    super("No free seats available")
+    super('No free seats available')
     this.seats = { max, used }
   }
 }
@@ -87,7 +87,7 @@ export class SeatsExhaustedError extends Error {
  * suspension and machine activation.
  */
 export default class KeygenService {
-  static readonly registrationName = "keygenService"
+  static readonly registrationName = 'keygenService'
   private account: string
   private token: string
   private timeout: number
@@ -98,25 +98,20 @@ export default class KeygenService {
 
   constructor(
     protected readonly container: MedusaContainer,
-    options: KeygenPluginOptions = {}
+    options: KeygenPluginOptions = {},
   ) {
     this.options = options
     this.account = env.KEYGEN_ACCOUNT
     this.token = env.KEYGEN_TOKEN
     this.timeout = options.timeoutMs ?? 10000
-    this.host =
-      options.host || env.KEYGEN_HOST
+    this.host = options.host || env.KEYGEN_HOST
     this.version = env.KEYGEN_VERSION
   }
 
   /**
    * Execute a fetch request with simple exponential backoff for 5xx errors.
    */
-  private async fetchWithRetry(
-    url: string,
-    init: RequestInit,
-    maxRetries = 3
-  ): Promise<Response> {
+  private async fetchWithRetry(url: string, init: RequestInit, maxRetries = 3): Promise<Response> {
     let attempt = 0
     let delay = 100
     while (true) {
@@ -150,60 +145,49 @@ export default class KeygenService {
    * `keygen_license` table.
    */
   async createLicense(
-    input: CreateInput
+    input: CreateInput,
   ): Promise<{ record: KeygenLicenseRecord | undefined; raw: KeygenResponse<LicensePayload> }> {
     const body = {
       data: {
-        type: "licenses",
+        type: 'licenses',
         attributes: {
           ...(input.metadata ? { metadata: input.metadata } : {}),
         },
         relationships: {
-          ...(input.policyId
-            ? { policy: { data: { type: "policies", id: input.policyId } } }
-            : {}),
-          ...(input.productId
-            ? { product: { data: { type: "products", id: input.productId } } }
-            : {}),
+          ...(input.policyId ? { policy: { data: { type: 'policies', id: input.policyId } } } : {}),
+          ...(input.productId ? { product: { data: { type: 'products', id: input.productId } } } : {}),
         },
       },
     }
 
     let res: Response
     try {
-      res = await this.fetchWithRetry(
-        `${this.host}/v1/accounts/${this.account}/licenses`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "Keygen-Version": this.version,
-          },
-          body: JSON.stringify(body),
-        }
-      )
+      res = await this.fetchWithRetry(`${this.host}/v1/accounts/${this.account}/licenses`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'Keygen-Version': this.version,
+        },
+        body: JSON.stringify(body),
+      })
     } catch (e) {
-      throw new Error(
-        `[keygen] create license request failed: ${e instanceof Error ? e.message : e}`
-      )
+      throw new Error(`[keygen] create license request failed: ${e instanceof Error ? e.message : e}`)
     }
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] create license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      const errText = await res.text().catch(() => '')
+      throw new Error(`[keygen] create license failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     const payload = (await res.json()) as KeygenResponse<LicensePayload>
     const licenseId = payload?.data?.id
     const key = payload?.data?.attributes?.key || null
 
-    const query = this.container.resolve<QueryClient>("query")
+    const query = this.container.resolve<QueryClient>('query')
     const { data } = await query.graph<KeygenLicenseRecord>({
-      entity: "keygen_license",
+      entity: 'keygen_license',
       data: [
         {
           order_id: input.orderId,
@@ -211,7 +195,7 @@ export default class KeygenService {
           customer_id: input.customerId ?? null,
           keygen_license_id: licenseId,
           license_key: key,
-          status: "created",
+          status: 'created',
           keygen_policy_id: input.policyId ?? null,
           keygen_product_id: input.productId ?? null,
         },
@@ -231,28 +215,22 @@ export default class KeygenService {
       res = await this.fetchWithRetry(
         `${this.host}/v1/accounts/${this.account}/licenses/${licenseId}/actions/suspend`,
         {
-          method: "POST",
+          method: 'POST',
           headers: {
             Authorization: `Bearer ${this.token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "Keygen-Version": this.version,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'Keygen-Version': this.version,
           },
-        }
+        },
       )
     } catch (e) {
-      throw new Error(
-        `[keygen] suspend license request failed: ${
-          e instanceof Error ? e.message : e
-        }`
-      )
+      throw new Error(`[keygen] suspend license request failed: ${e instanceof Error ? e.message : e}`)
     }
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] suspend license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      const errText = await res.text().catch(() => '')
+      throw new Error(`[keygen] suspend license failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     return (await res.json().catch(() => ({}))) as Record<string, unknown>
@@ -268,34 +246,25 @@ export default class KeygenService {
 
     let res: Response
     try {
-      res = await fetch(
-        `${this.host}/v1/accounts/${this.account}/licenses/${licenseId}/actions/revoke`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "Keygen-Version": this.version,
-          },
-          signal: controller.signal,
-        }
-      )
+      res = await fetch(`${this.host}/v1/accounts/${this.account}/licenses/${licenseId}/actions/revoke`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'Keygen-Version': this.version,
+        },
+        signal: controller.signal,
+      })
     } catch (e) {
-      throw new Error(
-        `[keygen] revoke license request failed: ${
-          e instanceof Error ? e.message : e
-        }`
-      )
+      throw new Error(`[keygen] revoke license request failed: ${e instanceof Error ? e.message : e}`)
     } finally {
       clearTimeout(id)
     }
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] revoke license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      const errText = await res.text().catch(() => '')
+      throw new Error(`[keygen] revoke license failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     return (await res.json().catch(() => ({}))) as Record<string, unknown>
@@ -305,51 +274,35 @@ export default class KeygenService {
    * Retrieves a license and its associated machines from Keygen.
    */
   async getLicenseWithMachines(licenseId: string) {
-    let res = await this.fetchWithRetry(
-      `${this.host}/v1/accounts/${this.account}/licenses/${licenseId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          Accept: "application/json",
-          "Keygen-Version": this.version,
-        },
-      }
-    )
+    let res = await this.fetchWithRetry(`${this.host}/v1/accounts/${this.account}/licenses/${licenseId}`, {
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        Accept: 'application/json',
+        'Keygen-Version': this.version,
+      },
+    })
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] get license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      const errText = await res.text().catch(() => '')
+      throw new Error(`[keygen] get license failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     const licensePayload = (await res.json().catch(() => ({}))) as LicenseResponse
-    const max =
-      licensePayload?.data?.attributes?.maxMachines ??
-      licensePayload?.maxMachines ??
-      0
-    const status =
-      licensePayload?.data?.attributes?.status ??
-      licensePayload?.data?.attributes?.state ??
-      null
+    const max = licensePayload?.data?.attributes?.maxMachines ?? licensePayload?.maxMachines ?? 0
+    const status = licensePayload?.data?.attributes?.status ?? licensePayload?.data?.attributes?.state ?? null
     const key = licensePayload?.data?.attributes?.key ?? null
 
-    res = await this.fetchWithRetry(
-      `${this.host}/v1/accounts/${this.account}/machines?filter[license]=${licenseId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          Accept: "application/json",
-          "Keygen-Version": this.version,
-        },
-      }
-    )
+    res = await this.fetchWithRetry(`${this.host}/v1/accounts/${this.account}/machines?filter[license]=${licenseId}`, {
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        Accept: 'application/json',
+        'Keygen-Version': this.version,
+      },
+    })
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] list machines failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      const errText = await res.text().catch(() => '')
+      throw new Error(`[keygen] list machines failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     const machinesPayload = (await res.json().catch(() => ({}))) as MachinesResponse
@@ -376,52 +329,40 @@ export default class KeygenService {
     name?: string
     meta?: Record<string, unknown>
   }) {
-    let res = await this.fetchWithRetry(
-      `${this.host}/v1/accounts/${this.account}/licenses/${input.licenseId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          Accept: "application/json",
-          "Keygen-Version": this.version,
-        },
-      }
-    )
+    let res = await this.fetchWithRetry(`${this.host}/v1/accounts/${this.account}/licenses/${input.licenseId}`, {
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        Accept: 'application/json',
+        'Keygen-Version': this.version,
+      },
+    })
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] get license failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      const errText = await res.text().catch(() => '')
+      throw new Error(`[keygen] get license failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     const licensePayload = (await res.json().catch(() => ({}))) as LicenseResponse
-    const max =
-      licensePayload?.data?.attributes?.maxMachines ??
-      licensePayload?.maxMachines ??
-      0
+    const max = licensePayload?.data?.attributes?.maxMachines ?? licensePayload?.maxMachines ?? 0
 
     res = await this.fetchWithRetry(
       `${this.host}/v1/accounts/${this.account}/machines?filter[license]=${input.licenseId}`,
       {
         headers: {
           Authorization: `Bearer ${this.token}`,
-          Accept: "application/json",
-          "Keygen-Version": this.version,
+          Accept: 'application/json',
+          'Keygen-Version': this.version,
         },
-      }
+      },
     )
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] list machines failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      const errText = await res.text().catch(() => '')
+      throw new Error(`[keygen] list machines failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     const machinesPayload = (await res.json().catch(() => ({}))) as MachinesResponse
-    const used = Array.isArray(machinesPayload?.data)
-      ? machinesPayload.data.length
-      : 0
+    const used = Array.isArray(machinesPayload?.data) ? machinesPayload.data.length : 0
 
     if (max > 0 && used >= max) {
       throw new SeatsExhaustedError(max, used)
@@ -429,7 +370,7 @@ export default class KeygenService {
 
     const body = {
       data: {
-        type: "machines",
+        type: 'machines',
         attributes: {
           fingerprint: input.fingerprint,
           ...(input.platform ? { platform: input.platform } : {}),
@@ -437,34 +378,29 @@ export default class KeygenService {
           ...(input.meta ? { meta: input.meta } : {}),
         },
         relationships: {
-          license: { data: { type: "licenses", id: input.licenseId } },
+          license: { data: { type: 'licenses', id: input.licenseId } },
         },
       },
     }
 
-    res = await this.fetchWithRetry(
-      `${this.host}/v1/accounts/${this.account}/machines`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "Keygen-Version": this.version,
-          "Idempotency-Key": `machine_${input.licenseId}_${input.fingerprint}`,
-        },
-        body: JSON.stringify(body),
-      }
-    )
+    res = await this.fetchWithRetry(`${this.host}/v1/accounts/${this.account}/machines`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Keygen-Version': this.version,
+        'Idempotency-Key': `machine_${input.licenseId}_${input.fingerprint}`,
+      },
+      body: JSON.stringify(body),
+    })
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
+      const errText = await res.text().catch(() => '')
       if (res.status === 409 || res.status === 422) {
         throw new SeatsExhaustedError(max, used)
       }
-      throw new Error(
-        `[keygen] create machine failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      throw new Error(`[keygen] create machine failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     const machinePayload = (await res.json().catch(() => ({}))) as KeygenResponse<MachinePayload>
@@ -479,23 +415,18 @@ export default class KeygenService {
    * Removes a machine from Keygen for the provided machine ID.
    */
   async deleteMachine(machineId: string) {
-    const res = await this.fetchWithRetry(
-      `${this.host}/v1/accounts/${this.account}/machines/${machineId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          Accept: "application/json",
-          "Keygen-Version": this.version,
-        },
-      }
-    )
+    const res = await this.fetchWithRetry(`${this.host}/v1/accounts/${this.account}/machines/${machineId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        Accept: 'application/json',
+        'Keygen-Version': this.version,
+      },
+    })
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] delete machine failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      const errText = await res.text().catch(() => '')
+      throw new Error(`[keygen] delete machine failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     return (await res.json().catch(() => ({}))) as Record<string, unknown>
@@ -504,33 +435,25 @@ export default class KeygenService {
   /**
    * Generates and caches a temporary asset download link for a license.
    */
-  async createDownloadLink(
-    input: CreateDownloadLinkInput
-  ): Promise<DownloadLink> {
-    const cacheKey = `${input.licenseId}:${input.assetId}:${
-      input.filename ?? ""
-    }`
+  async createDownloadLink(input: CreateDownloadLinkInput): Promise<DownloadLink> {
+    const cacheKey = `${input.licenseId}:${input.assetId}:${input.filename ?? ''}`
     const cached = this.downloadCache.get(cacheKey)
     if (cached && cached.expiresAt > Date.now()) {
       return {
         url: cached.url,
         expiresAt: new Date(cached.expiresAt).toISOString(),
         ttlSeconds: cached.ttlSeconds,
-        ...(cached.contentDisposition
-          ? { contentDisposition: cached.contentDisposition }
-          : {}),
+        ...(cached.contentDisposition ? { contentDisposition: cached.contentDisposition } : {}),
       }
     }
 
     const body = {
       data: {
-        type: "download-links",
+        type: 'download-links',
         relationships: {
-          license: { data: { type: "licenses", id: input.licenseId } },
+          license: { data: { type: 'licenses', id: input.licenseId } },
         },
-        ...(input.filename
-          ? { attributes: { filename: input.filename } }
-          : {}),
+        ...(input.filename ? { attributes: { filename: input.filename } } : {}),
       },
     }
 
@@ -539,29 +462,23 @@ export default class KeygenService {
       res = await this.fetchWithRetry(
         `${this.host}/v1/accounts/${this.account}/assets/${input.assetId}/actions/download`,
         {
-          method: "POST",
+          method: 'POST',
           headers: {
             Authorization: `Bearer ${this.token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "Keygen-Version": this.version,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'Keygen-Version': this.version,
           },
           body: JSON.stringify(body),
-        }
+        },
       )
     } catch (e) {
-      throw new Error(
-        `[keygen] create download link request failed: ${
-          e instanceof Error ? e.message : e
-        }`
-      )
+      throw new Error(`[keygen] create download link request failed: ${e instanceof Error ? e.message : e}`)
     }
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "")
-      throw new Error(
-        `[keygen] create download link failed: ${res.status} ${res.statusText} ${errText}`
-      )
+      const errText = await res.text().catch(() => '')
+      throw new Error(`[keygen] create download link failed: ${res.status} ${res.statusText} ${errText}`)
     }
 
     const payload = (await res.json().catch(() => ({}))) as {
@@ -579,15 +496,12 @@ export default class KeygenService {
     const attrs = payload.data?.attributes ?? {}
     const url = attrs.url ?? attrs.downloadUrl ?? null
     const expiresAtStr = attrs.expiresAt ?? attrs.expiry ?? null
-    const expiresAt = expiresAtStr
-      ? Date.parse(expiresAtStr)
-      : Date.now() + 900 * 1000
-    const ttlSeconds =
-      attrs.ttlSeconds ?? Math.floor((expiresAt - Date.now()) / 1000)
+    const expiresAt = expiresAtStr ? Date.parse(expiresAtStr) : Date.now() + 900 * 1000
+    const ttlSeconds = attrs.ttlSeconds ?? Math.floor((expiresAt - Date.now()) / 1000)
     const contentDisposition = attrs.contentDisposition
 
     if (!url) {
-      throw new Error("[keygen] download link response missing url")
+      throw new Error('[keygen] download link response missing url')
     }
 
     const link: DownloadLink = {
@@ -607,4 +521,3 @@ export default class KeygenService {
     return link
   }
 }
-

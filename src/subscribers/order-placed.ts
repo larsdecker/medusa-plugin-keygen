@@ -1,53 +1,36 @@
+import type { SubscriberArgs } from '@medusajs/medusa'
+import KeygenService from '../modules/keygen/service'
+import type { KeygenPluginOptions } from '../types'
 
-import type { SubscriberArgs } from "@medusajs/medusa"
-import KeygenService from "../modules/keygen/service"
-import type { KeygenPluginOptions } from "../types"
+export default async function orderPlacedSubscriber({ container, event }: SubscriberArgs<{ id: string }>) {
+  if (event.name !== 'order.placed') return
 
-export default async function orderPlacedSubscriber({
-  container,
-  event,
-}: SubscriberArgs<{ id: string }>) {
-  if (event.name !== "order.placed") return
-
-  const logger = container.resolve("logger")
-  const config = container.resolve("configModule") as {
+  const logger = container.resolve('logger')
+  const config = container.resolve('configModule') as {
     plugins?: { resolve?: string; options?: KeygenPluginOptions }[]
   }
   const pluginCfg = (config.plugins || []).find(
-    (p) => typeof p?.resolve === "string" && p.resolve.includes("medusa-plugin-keygen")
+    (p) => typeof p?.resolve === 'string' && p.resolve.includes('medusa-plugin-keygen'),
   )
   const options: KeygenPluginOptions = pluginCfg?.options || {}
 
   const keygen = container.resolve<KeygenService>(KeygenService.registrationName)
 
   try {
-    const query = container.resolve("query")
+    const query = container.resolve('query')
     const { data: orders } = await query.graph({
-      entity: "order",
+      entity: 'order',
       filters: { id: event.data.id },
-      fields: [
-        "id",
-        "customer_id",
-        "metadata",
-        "items.*",
-        "items.metadata",
-        "items.product_id",
-        "items.variant_id",
-      ],
+      fields: ['id', 'customer_id', 'metadata', 'items.*', 'items.metadata', 'items.product_id', 'items.variant_id'],
     })
 
     const order = orders?.[0]
     if (!order) return
 
     for (const item of order.items ?? []) {
-      const policyId =
-        item?.metadata?.[options.policyMetadataKey ?? "keygen_policy"] ??
-        options.defaultPolicyId ??
-        null
+      const policyId = item?.metadata?.[options.policyMetadataKey ?? 'keygen_policy'] ?? options.defaultPolicyId ?? null
       const productId =
-        item?.metadata?.[options.productMetadataKey ?? "keygen_product"] ??
-        options.defaultProductId ??
-        null
+        item?.metadata?.[options.productMetadataKey ?? 'keygen_product'] ?? options.defaultProductId ?? null
 
       if (!policyId && !productId) continue
 
@@ -64,9 +47,7 @@ export default async function orderPlacedSubscriber({
         },
       })
 
-      logger.info(
-        `[keygen] license created for order ${order.id} / item ${item.id}: ${record?.license_key}`
-      )
+      logger.info(`[keygen] license created for order ${order.id} / item ${item.id}: ${record?.license_key}`)
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)

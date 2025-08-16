@@ -1,4 +1,4 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http'
 
 type AuthUser = { id?: string; customer_id?: string }
 type LicenseRow = {
@@ -15,13 +15,13 @@ type License = {
 }
 
 const maskKey = (key: string | null) => {
-  if (!key) return ""
-  const parts = key.split("-")
+  if (!key) return ''
+  const parts = key.split('-')
   if (parts.length <= 1) {
-    return key.length > 4 ? key.replace(/.(?=.{4})/g, "*") : key
+    return key.length > 4 ? key.replace(/.(?=.{4})/g, '*') : key
   }
   const last = parts.pop()!
-  return [...parts.map(() => "****"), last].join("-")
+  return [...parts.map(() => '****'), last].join('-')
 }
 
 export const GET = async (
@@ -30,20 +30,19 @@ export const GET = async (
     | { licenses: License[] }
     | { licenses: License[]; count: number; limit: number; offset: number }
     | { message: string }
-  >
+  >,
 ) => {
   const { user, auth } = req as unknown as {
     user?: AuthUser
     auth?: AuthUser
   }
-  const customerId =
-    user?.customer_id ?? user?.id ?? auth?.customer_id ?? auth?.id
+  const customerId = user?.customer_id ?? user?.id ?? auth?.customer_id ?? auth?.id
 
   if (!customerId) {
-    return res.status(401).json({ message: "Unauthorized" })
+    return res.status(401).json({ message: 'Unauthorized' })
   }
 
-  const query = req.scope.resolve("query") as {
+  const query = req.scope.resolve('query') as {
     graph<T>(cfg: Record<string, unknown>): Promise<{
       data: T[] | null
       metadata?: { count?: number }
@@ -68,16 +67,15 @@ export const GET = async (
     status?: string
   }
 
-  const shouldPaginate =
-    typeof limitParam !== "undefined" || typeof offsetParam !== "undefined"
+  const shouldPaginate = typeof limitParam !== 'undefined' || typeof offsetParam !== 'undefined'
 
-  const take = shouldPaginate ? parseInt(limitParam ?? "20", 10) : undefined
-  const skip = shouldPaginate ? parseInt(offsetParam ?? "0", 10) : undefined
+  const take = shouldPaginate ? parseInt(limitParam ?? '20', 10) : undefined
+  const skip = shouldPaginate ? parseInt(offsetParam ?? '0', 10) : undefined
 
-  let orderBy: Record<string, "asc" | "desc"> = { created_at: "desc" }
+  let orderBy: Record<string, 'asc' | 'desc'> = { created_at: 'desc' }
   if (order) {
-    const [field, direction] = order.split(":")
-    orderBy = { [field]: (direction as "asc" | "desc") ?? "asc" }
+    const [field, direction] = order.split(':')
+    orderBy = { [field]: (direction as 'asc' | 'desc') ?? 'asc' }
   }
 
   const filters: Record<string, unknown> = { customer_id: customerId }
@@ -87,14 +85,9 @@ export const GET = async (
   if (status) filters.status = status
 
   const cfg: Record<string, unknown> = {
-    entity: "keygen_license",
+    entity: 'keygen_license',
     filters,
-    fields: [
-      "keygen_license_id",
-      "license_key",
-      "status",
-      "keygen_product_id",
-    ],
+    fields: ['keygen_license_id', 'license_key', 'status', 'keygen_product_id'],
     ...(shouldPaginate ? { pagination: { take, skip } } : {}),
     ...(orderBy ? { orderBy } : {}),
   }
@@ -105,9 +98,7 @@ export const GET = async (
     id: l.keygen_license_id,
     key: maskKey(l.license_key),
     status: l.status,
-    ...(l.keygen_product_id
-      ? { product: { id: l.keygen_product_id } }
-      : {}),
+    ...(l.keygen_product_id ? { product: { id: l.keygen_product_id } } : {}),
   }))
 
   if (shouldPaginate) {

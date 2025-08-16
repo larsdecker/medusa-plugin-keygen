@@ -1,7 +1,7 @@
-import { defineWidgetConfig } from "@medusajs/admin-sdk"
-import type { DetailWidgetProps, AdminCustomer } from "@medusajs/framework/types"
-import { Container, Heading, Text, Button } from "@medusajs/ui"
-import { useEffect, useState } from "react"
+import { defineWidgetConfig } from '@medusajs/admin-sdk'
+import type { DetailWidgetProps, AdminCustomer } from '@medusajs/framework/types'
+import { Container, Heading, Text, Button } from '@medusajs/ui'
+import { useEffect, useState } from 'react'
 
 type Machine = { id: string; name?: string | null; fingerprint?: string | null; platform?: string | null }
 type License = {
@@ -19,7 +19,7 @@ const KeygenCustomerWidget = ({ data }: DetailWidgetProps<AdminCustomer>) => {
   const load = async () => {
     if (!customerId) return
     const res = await fetch(`/admin/keygen/customers/${customerId}/licenses`, {
-      credentials: "include",
+      credentials: 'include',
     })
     if (!res.ok) return
     const json = await res.json()
@@ -32,8 +32,8 @@ const KeygenCustomerWidget = ({ data }: DetailWidgetProps<AdminCustomer>) => {
 
   async function unbind(machineId: string) {
     await fetch(`/admin/keygen/machines/${machineId}`, {
-      method: "DELETE",
-      credentials: "include",
+      method: 'DELETE',
+      credentials: 'include',
     })
     await load()
   }
@@ -60,11 +60,7 @@ const KeygenCustomerWidget = ({ data }: DetailWidgetProps<AdminCustomer>) => {
                 {lic.machines.map((m) => (
                   <div key={m.id} className="flex items-center gap-2">
                     <Text>{m.name || m.fingerprint || m.id}</Text>
-                    <Button
-                      size="small"
-                      variant="secondary"
-                      onClick={() => unbind(m.id)}
-                    >
+                    <Button size="small" variant="secondary" onClick={() => unbind(m.id)}>
                       Unbind
                     </Button>
                   </div>
@@ -81,7 +77,7 @@ const KeygenCustomerWidget = ({ data }: DetailWidgetProps<AdminCustomer>) => {
 }
 
 export const config = defineWidgetConfig({
-  zone: "customer.details.after",
+  zone: 'customer.details.after',
 })
 
 export default KeygenCustomerWidget

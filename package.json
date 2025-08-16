@@ -20,13 +20,23 @@
     "@medusajs/framework": "^2.8.0",
     "@medusajs/medusa": "^2.8.0",
     "@types/node": "^20.11.5",
+    "@typescript-eslint/eslint-plugin": "^8.21.0",
+    "@typescript-eslint/parser": "^8.21.0",
+    "eslint": "^8",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "prettier": "^3.4.2",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "lint": "eslint --ext .js,.ts src --cache --cache-strategy content",
+    "lint:fix": "eslint --ext .js,.ts src --fix --cache --cache-strategy content",
+    "format": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\" --cache --cache-strategy content --log-level warn",
+    "format:fix": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" --cache --cache-strategy content --log-level warn"
   },
   "exports": {
     "./package.json": "./package.json",

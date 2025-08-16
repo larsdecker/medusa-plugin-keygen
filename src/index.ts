@@ -1,17 +1,12 @@
+import type { LoaderOptions } from '@medusajs/framework/types'
+import KeygenService from './modules/keygen/service'
+import orderPlacedSubscriber from './subscribers/order-placed'
+import orderCanceledSubscriber from './subscribers/order-canceled'
+import orderRefundedSubscriber from './subscribers/order-refunded'
 
-import type { LoaderOptions } from "@medusajs/framework/types"
-import KeygenService from "./modules/keygen/service"
-import orderPlacedSubscriber from "./subscribers/order-placed"
-import orderCanceledSubscriber from "./subscribers/order-canceled"
-import orderRefundedSubscriber from "./subscribers/order-refunded"
-
-export default async function keygenPlugin(_: LoaderOptions) {
+export default async function keygenPlugin(_options: LoaderOptions) {
   return {
     services: [KeygenService],
-    subscribers: [
-      orderPlacedSubscriber,
-      orderCanceledSubscriber,
-      orderRefundedSubscriber,
-    ],
+    subscribers: [orderPlacedSubscriber, orderCanceledSubscriber, orderRefundedSubscriber],
   }
 }

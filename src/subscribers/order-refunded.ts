@@ -1,23 +1,20 @@
-import type { SubscriberArgs } from "@medusajs/medusa"
-import KeygenService from "../modules/keygen/service"
+import type { SubscriberArgs } from '@medusajs/medusa'
+import KeygenService from '../modules/keygen/service'
 
-export default async function orderRefundedSubscriber({
-  container,
-  event,
-}: SubscriberArgs<{ id: string }>) {
-  if (event.name !== "order.refunded") return
+export default async function orderRefundedSubscriber({ container, event }: SubscriberArgs<{ id: string }>) {
+  if (event.name !== 'order.refunded') return
 
-  const logger = container.resolve("logger")
+  const logger = container.resolve('logger')
   const keygen = container.resolve<KeygenService>(KeygenService.registrationName)
 
   try {
-    const query = container.resolve("query") as {
+    const query = container.resolve('query') as {
       graph<T>(cfg: Record<string, unknown>): Promise<{ data: T[] | null }>
     }
     const { data: licenses } = await query.graph<{ id: string; keygen_license_id?: string; order_item_id?: string }>({
-      entity: "keygen_license",
+      entity: 'keygen_license',
       filters: { order_id: event.data.id },
-      fields: ["id", "keygen_license_id", "order_item_id"],
+      fields: ['id', 'keygen_license_id', 'order_item_id'],
     })
 
     for (const lic of licenses ?? []) {
@@ -26,8 +23,8 @@ export default async function orderRefundedSubscriber({
       await keygen.revokeLicense(lic.keygen_license_id)
 
       await query.graph({
-        entity: "keygen_license",
-        data: [{ id: lic.id, status: "revoked" }],
+        entity: 'keygen_license',
+        data: [{ id: lic.id, status: 'revoked' }],
       })
 
       logger.info(
