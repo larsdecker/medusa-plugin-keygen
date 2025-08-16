@@ -24,8 +24,10 @@ export const GET = async (_req: MedusaRequest, res: MedusaResponse) => {
     return res.status(r.status).json({ message: text || r.statusText })
   }
 
-  const json = await r.json() as any
-  const data = (json?.data || []).map((e: any) => ({
+  const json = (await r.json()) as {
+    data?: { id?: string; attributes?: { code?: string; name?: string } }[]
+  }
+  const data = (json.data || []).map((e) => ({
     id: e?.id,
     code: e?.attributes?.code,
     name: e?.attributes?.name,

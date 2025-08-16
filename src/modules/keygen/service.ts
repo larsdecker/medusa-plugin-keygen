@@ -32,6 +32,45 @@ type CachedLink = {
   contentDisposition?: string
 }
 
+interface KeygenRecord<Attr = Record<string, unknown>> {
+  id?: string
+  attributes?: Attr
+}
+
+interface KeygenResponse<T> {
+  data?: T
+}
+
+interface LicenseAttributes {
+  key?: string | null
+  maxMachines?: number
+  status?: string | null
+  state?: string | null
+}
+
+type LicensePayload = KeygenRecord<LicenseAttributes>
+
+type LicenseResponse = KeygenResponse<LicensePayload> & { maxMachines?: number }
+
+interface KeygenLicenseRecord {
+  license_key?: string
+  [k: string]: unknown
+}
+
+interface MachineAttributes {
+  name?: string | null
+  fingerprint?: string | null
+  platform?: string | null
+}
+
+type MachinePayload = KeygenRecord<MachineAttributes>
+
+type MachinesResponse = KeygenResponse<MachinePayload[]>
+
+interface QueryClient {
+  graph<T>(cfg: Record<string, unknown>): Promise<{ data: T[] }>
+}
+
 export class SeatsExhaustedError extends Error {
   code = "SEATS_EXHAUSTED"
   seats: { max: number; used: number }
@@ -98,7 +137,9 @@ export default class KeygenService {
     }
   }
 
-  async createLicense(input: CreateInput) {
+  async createLicense(
+    input: CreateInput
+  ): Promise<{ record: KeygenLicenseRecord | undefined; raw: KeygenResponse<LicensePayload> }> {
     const body = {
       data: {
         type: "licenses",
@@ -144,12 +185,12 @@ export default class KeygenService {
       )
     }
 
-    const payload = (await res.json()) as any
+    const payload = (await res.json()) as KeygenResponse<LicensePayload>
     const licenseId = payload?.data?.id
     const key = payload?.data?.attributes?.key || null
 
-    const query = this.container.resolve<any>("query")
-    const { data } = await query.graph({
+    const query = this.container.resolve<QueryClient>("query")
+    const { data } = await query.graph<KeygenLicenseRecord>({
       entity: "keygen_license",
       data: [
         {
@@ -198,7 +239,7 @@ export default class KeygenService {
       )
     }
 
-    return (await res.json().catch(() => ({}))) as any
+    return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
 
   async revokeLicense(licenseId: string) {
@@ -237,7 +278,7 @@ export default class KeygenService {
       )
     }
 
-    return (await res.json().catch(() => ({}))) as any
+    return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
 
   async getLicenseWithMachines(licenseId: string) {
@@ -259,7 +300,7 @@ export default class KeygenService {
       )
     }
 
-    const licensePayload = (await res.json().catch(() => ({}))) as any
+    const licensePayload = (await res.json().catch(() => ({}))) as LicenseResponse
     const max =
       licensePayload?.data?.attributes?.maxMachines ??
       licensePayload?.maxMachines ??
@@ -288,9 +329,9 @@ export default class KeygenService {
       )
     }
 
-    const machinesPayload = (await res.json().catch(() => ({}))) as any
+    const machinesPayload = (await res.json().catch(() => ({}))) as MachinesResponse
     const machines = Array.isArray(machinesPayload?.data)
-      ? machinesPayload.data.map((m: any) => ({
+      ? machinesPayload.data.map((m: MachinePayload) => ({
           id: m?.id,
           name: m?.attributes?.name ?? null,
           fingerprint: m?.attributes?.fingerprint ?? null,
@@ -326,7 +367,7 @@ export default class KeygenService {
       )
     }
 
-    const licensePayload = (await res.json().catch(() => ({}))) as any
+    const licensePayload = (await res.json().catch(() => ({}))) as LicenseResponse
     const max =
       licensePayload?.data?.attributes?.maxMachines ??
       licensePayload?.maxMachines ??
@@ -350,7 +391,7 @@ export default class KeygenService {
       )
     }
 
-    const machinesPayload = (await res.json().catch(() => ({}))) as any
+    const machinesPayload = (await res.json().catch(() => ({}))) as MachinesResponse
     const used = Array.isArray(machinesPayload?.data)
       ? machinesPayload.data.length
       : 0
@@ -399,7 +440,7 @@ export default class KeygenService {
       )
     }
 
-    const machinePayload = (await res.json().catch(() => ({}))) as any
+    const machinePayload = (await res.json().catch(() => ({}))) as KeygenResponse<MachinePayload>
     return {
       machineId: machinePayload?.data?.id,
       seats: { max, used: used + 1 },
@@ -427,7 +468,7 @@ export default class KeygenService {
       )
     }
 
-    return (await res.json().catch(() => ({}))) as any
+    return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
 
   async createDownloadLink(

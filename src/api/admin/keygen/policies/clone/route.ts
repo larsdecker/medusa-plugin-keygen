@@ -35,10 +35,19 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     const text = await src.text().catch(() => "")
     return res.status(src.status).json({ message: text || src.statusText })
   }
-  const srcJson = await src.json() as any
+  const srcJson = (await src.json()) as {
+    data?: {
+      attributes?: {
+        name?: string
+        maxMachines?: number
+        floating?: boolean
+        duration?: number
+      }
+    }
+  }
   const attrs = srcJson?.data?.attributes || {}
 
-  const payload: any = {
+  const payload: Record<string, unknown> = {
     data: {
       type: "policies",
       attributes: {
@@ -70,7 +79,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     return res.status(r.status).json({ message: text || r.statusText })
   }
 
-  const json = await r.json() as any
+  const json = (await r.json()) as { data?: { id?: string } }
   const newId = json?.data?.id
 
   // 3) Entitlements: clone from source unless overrides specify a custom set
@@ -80,8 +89,10 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "Keygen-Version": version }
     })
     if (ents.ok) {
-      const entsJson = await ents.json() as any
-      entitlementsToAttach = (entsJson?.data || []).map((e: any) => e?.id).filter(Boolean)
+      const entsJson = (await ents.json()) as { data?: { id?: string }[] }
+      entitlementsToAttach = (entsJson.data || [])
+        .map((e) => e?.id)
+        .filter((id): id is string => Boolean(id))
     }
   }
 

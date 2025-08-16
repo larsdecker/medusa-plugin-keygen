@@ -1,8 +1,16 @@
 import crypto from "crypto"
+import type { Request, Response, NextFunction } from "express"
 
-export default function verifyKeygenWebhook(req: any, res: any, next: any) {
+type RawRequest = Request & { rawBody?: Buffer | string }
+
+export default function verifyKeygenWebhook(
+  req: RawRequest,
+  res: Response,
+  next: NextFunction
+) {
   const secret = process.env.KEYGEN_WEBHOOK_SECRET
-  const signature = req.headers?.["x-signature"]
+  const signatureHeader = req.headers["x-signature"]
+  const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader
 
   if (!secret || !signature) {
     res.status?.(401).json?.({ message: "Invalid signature" })
