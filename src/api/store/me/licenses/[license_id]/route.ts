@@ -1,5 +1,5 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import KeygenService from "../../../../../modules/keygen/service"
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http'
+import KeygenService from '../../../../../modules/keygen/service'
 
 type AuthUser = { id?: string; customer_id?: string }
 type LicenseRow = {
@@ -22,43 +22,34 @@ type License = {
   }[]
 }
 
-export const GET = async (
-  req: MedusaRequest,
-  res: MedusaResponse<{ license: License } | { message: string }>
-) => {
+export const GET = async (req: MedusaRequest, res: MedusaResponse<{ license: License } | { message: string }>) => {
   const { user, auth } = req as unknown as {
     user?: AuthUser
     auth?: AuthUser
   }
-  const customerId =
-    user?.customer_id ?? user?.id ?? auth?.customer_id ?? auth?.id
+  const customerId = user?.customer_id ?? user?.id ?? auth?.customer_id ?? auth?.id
   if (!customerId) {
-    return res.status(401).json({ message: "Unauthorized" })
+    return res.status(401).json({ message: 'Unauthorized' })
   }
 
   const licenseId = req.params.license_id
 
-  const query = req.scope.resolve("query") as {
+  const query = req.scope.resolve('query') as {
     graph<T>(cfg: Record<string, unknown>): Promise<{ data: T[] | null }>
   }
   const { data } = await query.graph<LicenseRow>({
-    entity: "keygen_license",
+    entity: 'keygen_license',
     filters: { customer_id: customerId, keygen_license_id: licenseId },
-    fields: [
-      "keygen_license_id",
-      "license_key",
-      "status",
-      "keygen_product_id",
-    ],
+    fields: ['keygen_license_id', 'license_key', 'status', 'keygen_product_id'],
     pagination: { take: 1 },
   })
 
   const l = data?.[0]
   if (!l) {
-    return res.status(404).json({ message: "License not found" })
+    return res.status(404).json({ message: 'License not found' })
   }
 
-  const keygen = req.scope.resolve<KeygenService>("keygenService")
+  const keygen = req.scope.resolve<KeygenService>('keygenService')
   type LicenseDetails = {
     key?: string | null
     status?: string | null
@@ -73,7 +64,7 @@ export const GET = async (
   let det: LicenseDetails | null = null
   try {
     det = await keygen.getLicenseWithMachines(l.keygen_license_id)
-  } catch (_) {
+  } catch {
     det = null
   }
 
@@ -82,7 +73,7 @@ export const GET = async (
     key: det?.key ?? l.license_key,
     status: det?.status ?? l.status,
     ...(l.keygen_product_id ? { product: { id: l.keygen_product_id } } : {}),
-    ...(typeof det?.maxMachines === "number" ? { max_machines: det.maxMachines } : {}),
+    ...(typeof det?.maxMachines === 'number' ? { max_machines: det.maxMachines } : {}),
     ...(Array.isArray(det?.machines) ? { machines: det.machines } : {}),
   }
 

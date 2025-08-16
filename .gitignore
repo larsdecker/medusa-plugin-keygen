@@ -12,6 +12,9 @@ pnpm-lock.yaml
 dist
 coverage
 
+# ESLint cache
+.eslintcache
+
 # Mac
 .DS_Store
 

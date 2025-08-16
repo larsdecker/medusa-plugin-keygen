@@ -11,15 +11,8 @@
     "rootDir": "src",
     "resolveJsonModule": true,
     "strict": true,
-    "types": [
-      "vitest/globals"
-    ]
+    "types": ["vitest/globals"]
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "src/__tests__",
-    "src/admin"
-  ]
+  "include": ["src"],
+  "exclude": ["src/__tests__", "src/admin"]
 }
