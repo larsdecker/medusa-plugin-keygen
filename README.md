@@ -126,12 +126,6 @@ npm run build
 npm test
 ```
 
-## Use from GitHub
-
-- Create a repo (e.g., `YOUR_ORG/medusa-plugin-keygen`) and push the files
-- Bump the version (SemVer), tag it (e.g., `v0.1.0`)
-- Optional: GitHub release / npm publish
-
 ## License
 
 MIT
