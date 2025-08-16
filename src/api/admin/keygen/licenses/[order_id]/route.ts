@@ -2,6 +2,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import KeygenService from "../../../../../modules/keygen/service"
 
+// Lists all Keygen licenses for a given order.
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const { order_id } = req.params as { order_id: string }
   const query = req.scope.resolve("query")
@@ -25,6 +26,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   res.json({ licenses: data })
 }
 
+// Manually issues a new license for the provided order.
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   const { order_id } = req.params as { order_id: string }
   const keygen = req.scope.resolve<KeygenService>("keygenService")

@@ -45,6 +45,17 @@ Includes **admin widgets** (product & variant) and **admin server routes** (vali
 The licenses endpoint lets you fetch existing licenses for an order or manually
 generate them if needed.
 
+## KeygenService API
+The plugin registers a `keygenService` on the Medusa container. It provides helpers for common licensing operations:
+
+- `createLicense(input)` – create a license in Keygen and persist it locally
+- `suspendLicense(licenseId)` – suspend an existing license
+- `revokeLicense(licenseId)` – revoke a license permanently
+- `getLicenseWithMachines(licenseId)` – retrieve a license along with its machines
+- `activateMachine(input)` – attach a machine to a license, enforcing seat limits
+- `deleteMachine(machineId)` – remove a machine from Keygen
+- `createDownloadLink(input)` – generate and cache a temporary asset download URL
+
 ## Installation
 ```bash
 npm i medusa-plugin-keygen

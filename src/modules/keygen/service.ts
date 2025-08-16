@@ -81,6 +81,11 @@ export class SeatsExhaustedError extends Error {
   }
 }
 
+/**
+ * Service wrapping interactions with the Keygen licensing API.
+ * It handles license lifecycle operations such as creation,
+ * suspension and machine activation.
+ */
 export default class KeygenService {
   static readonly registrationName = "keygenService"
   private account: string
@@ -104,6 +109,9 @@ export default class KeygenService {
     this.version = env.KEYGEN_VERSION
   }
 
+  /**
+   * Execute a fetch request with simple exponential backoff for 5xx errors.
+   */
   private async fetchWithRetry(
     url: string,
     init: RequestInit,
@@ -137,6 +145,10 @@ export default class KeygenService {
     }
   }
 
+  /**
+   * Creates a new license in Keygen and persists a copy in the local
+   * `keygen_license` table.
+   */
   async createLicense(
     input: CreateInput
   ): Promise<{ record: KeygenLicenseRecord | undefined; raw: KeygenResponse<LicensePayload> }> {
@@ -209,6 +221,10 @@ export default class KeygenService {
     return { record: data?.[0], raw: payload }
   }
 
+  /**
+   * Marks a license as suspended in Keygen.
+   * Typically used when an order is cancelled.
+   */
   async suspendLicense(licenseId: string) {
     let res: Response
     try {
@@ -242,6 +258,10 @@ export default class KeygenService {
     return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
 
+  /**
+   * Permanently revokes a license in Keygen.
+   * Called when an order is refunded.
+   */
   async revokeLicense(licenseId: string) {
     const controller = new AbortController()
     const id = setTimeout(() => controller.abort(), this.timeout)
@@ -281,6 +301,9 @@ export default class KeygenService {
     return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
 
+  /**
+   * Retrieves a license and its associated machines from Keygen.
+   */
   async getLicenseWithMachines(licenseId: string) {
     let res = await this.fetchWithRetry(
       `${this.host}/v1/accounts/${this.account}/licenses/${licenseId}`,
@@ -342,6 +365,10 @@ export default class KeygenService {
     return { id: licenseId, key, status, maxMachines: max, machines }
   }
 
+  /**
+   * Activates a new machine for the given license. Throws when no seats
+   * are available.
+   */
   async activateMachine(input: {
     licenseId: string
     fingerprint: string
@@ -448,6 +475,9 @@ export default class KeygenService {
     }
   }
 
+  /**
+   * Removes a machine from Keygen for the provided machine ID.
+   */
   async deleteMachine(machineId: string) {
     const res = await this.fetchWithRetry(
       `${this.host}/v1/accounts/${this.account}/machines/${machineId}`,
@@ -471,6 +501,9 @@ export default class KeygenService {
     return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
 
+  /**
+   * Generates and caches a temporary asset download link for a license.
+   */
   async createDownloadLink(
     input: CreateDownloadLinkInput
   ): Promise<DownloadLink> {
